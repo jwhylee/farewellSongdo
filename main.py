@@ -14,36 +14,24 @@ def create_map(col: int, location: list) -> list:
 # 함수 : 이동 -> 입력이 유효한지 판단 후 이동 출력
 def move_char(loc_str: str):
     print()
-    direction_block = "그 방향은 막혔어"
-    if loc_str == "w":
-        if check_move(location_idx, 0, 1):
-            location_idx[0] += 1
-            print(f"현재 위치: {schoolMap[location_idx[0]][location_idx[1]]}")
-        else:
-            print(direction_block)
+    directions = {
+        "w": (0, 1),
+        "s": (0, -1),  
+        "a": (1, -1),  
+        "d": (1, 1),   
+    }
 
-    elif loc_str == "s":
-        if check_move(location_idx, 0, -1):
-            location_idx[0] -= 1
-            print(f"현재 위치: {schoolMap[location_idx[0]][location_idx[1]]}")
-        else:
-            print(direction_block)
-
-    elif loc_str == "a":
-        if check_move(location_idx, 1, -1):
-            location_idx[1] -= 1
-            print(f"현재 위치: {schoolMap[location_idx[0]][location_idx[1]]}")
-        else:
-            print(direction_block)
-
-    elif loc_str == "d":
-        if check_move(location_idx, 1, 1):
-            location_idx[1] += 1
-            print(f"현재 위치: {schoolMap[location_idx[0]][location_idx[1]]}")
-        else:
-            print(direction_block)
-    else:
+    if loc_str not in directions:
         print("잘못된 입력입니다.")
+        return
+
+    idx, num = directions[loc_str]
+
+    if check_move(location_idx, idx, num):
+        location_idx[idx] += num
+        print(f"현재 위치: {schoolMap[location_idx[0]][location_idx[1]]}")
+    else:
+        print("그 방향은 막혔어")
 
 # 함수 : 이동 유효성 검사 -> 불리언 - 이동 가능 여부
 def check_move(loc_idx: list, idx: int, num: int) -> bool:
@@ -66,18 +54,18 @@ def check_move(loc_idx: list, idx: int, num: int) -> bool:
 # 변수 : 주인공 상태 -> 딕셔너리 - 배고픔정도
 char_stat = {
     "levelHunger": "배고픔",
-    }
+}
 
 # 변수 : 환경 상태 -> 딕셔너리 - 시간
 env_stat = {
     "time": 1100
-    }
+}
 
 # 변수 : 위치 -> 리스트 - [x,y]
 location = "연대앞 버스정류장"
 location_idx = [0, 0]
 
-# 학교 위치
+# 변수 : 학교 위치 -> 연대앞 버스정류장 ~ 백주년기념관
 school_locations = [
     "연대앞 버스정류장",
     "정문",
@@ -90,8 +78,13 @@ school_locations = [
     "백주년기념관",
 ]
 
-# 학교 지도 및 좌표
+# 변수 : 함수 생성 -> 학교 지도 및 좌표 - n개의 열을 가지는 지도 생성
 schoolMap = create_map(3, school_locations)
+
+# 변수 : 설정 -> 딕셔너리 - 난이도
+settings = {
+    "difficulty": ["쉬움", "보통", "어려움"]
+}
 
 if __name__ == "__main__":
     gameplay = True
