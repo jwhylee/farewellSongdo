@@ -1,4 +1,4 @@
-#------------------ 함수 목록 ------------------#
+# ------------------ 함수 목록 ------------------#
 
 # 지도 생성 -> 리스트 - 지도, 지도 좌표
 def create_map(col: int, location: list) -> list:
@@ -14,6 +14,7 @@ def create_map(col: int, location: list) -> list:
 
 # 이동 -> 입력이 유효한지 판단 후 이동 출력
 def move_char(loc_str: str):
+    print("\n" + SEP)
     char_stat["hp"] -= 1
     directions = {
         "w": (0, 1),
@@ -23,23 +24,21 @@ def move_char(loc_str: str):
     }
 
     if loc_str not in directions:
-        print("\n" + "-" * 40)
-        print("잘못된 입력입니다.")
-        print("-" * 40)
-        return
+        print("  잘못된 입력입니다.")
+        return 
 
     idx, num = directions[loc_str]
 
     if check_move(location_idx, idx, num):
         location_idx[idx] += num
         location = schoolMap[location_idx[0]][location_idx[1]]
-        print("\n" + "-" * 40)
-        print(f"현재 위치: {location}")
-        print("-" * 40)
+        print(f"  현재 위치: {location}")
+        doInteraction(location)
     else:
-        print("\n" + "-" * 40)
-        print("그 방향은 막혔어")
-        print("-" * 40)
+        print("  막힌 방향입니다.")
+
+    print(SEP)
+    
 
 
 # 이동 유효성 검사 -> 불리언 - 이동 가능 여부
@@ -58,45 +57,56 @@ def check_move(loc_idx: list, idx: int, num: int) -> bool:
     return validity
 
 
-# 상태출력
+# 상태 출력
 def print_status():
-    print("\n" + "-" * 40)
-    print(f"소지금: {char_stat["money"]}")
-    print(f"체력: {char_stat["hp"]}")
-    print("-" * 40)
+    print("\n" + SEP)
+    print("[ 상태 ]")
+    print(f"  체력:   {char_stat['hp']}")
+    print(f"  소지금: {char_stat['money']}원")
+    print(SEP)
 
 
 # 가방 열기
 def open_bag():
-    openBag = True
-    while openBag:
-        if char_stat["bag"]:
-            print("\n" + "-" * 40)
-            print(list(char_stat["bag"].keys()))
-            print("-" * 40)
+    while True:
+        print("\n" + SEP)
+        print("[ 가방 ]")
+        if not char_stat["bag"]:
+            print("  가방이 비어있습니다.")
+            print(SEP)
+            break
+        for i, (name, count) in enumerate(char_stat["bag"].items(), 1):
+            hp_recover = item_dict[name][1]
+            print(f"  {i}. {name}  x{count}  (HP +{hp_recover})")
+        print(SEP)
+        user_input = input("사용할 아이템 번호 입력 (q: 닫기): ")
+        if user_input == "q":
+            break
+        use_item(user_input)
 
-            user_input = input("사용할 아이템의 이름 또는 번호를 입력하세요: ")
-            if user_input == "q":
-                openBag = False
-                continue
-
-            use_item(user_input)
-        else:
-            print("\n" + "-" * 40)
-            print("가방이 비어있습니다.")
-            print("-" * 40)
-            openBag = False
-        
 
 # 아이템 사용
-def use_item(user_input):
-    if user_input in char_stat["bag"]:
-        char_stat["hp"] += item_dict[user_input][1]
-        char_stat["bag"][user_input] -= 1
-        print(f"{user_input}을 사용했습니다")
-        clean_inventory()
+def use_item(user_input: str):
+    items = list(char_stat["bag"].items())
+
+    if user_input.isdigit():
+        idx = int(user_input) - 1
+        if 0 <= idx < len(items):
+            name = items[idx][0]
+        else:
+            print("  없는 번호입니다.")
+            return
+    elif user_input in char_stat["bag"]:
+        name = user_input
     else:
-        print("가방에 없는 아이템입니다.")
+        print("  가방에 없는 아이템입니다.")
+        return
+
+    recover = item_dict[name][1]
+    char_stat["hp"] += recover
+    char_stat["bag"][name] -= 1
+    print(f"\n  → {name} 사용 (HP +{recover}, 현재 HP: {char_stat['hp']})")
+    clean_inventory()
 
 
 # 가방 정리 : 0개인 아이템 제거
@@ -104,14 +114,73 @@ def clean_inventory():
     char_stat["bag"] = {k: v for k, v in char_stat["bag"].items() if v != 0}
 
 
-#------------------ 변수 목록 ------------------#
+# 상호작용 - 지점 도착 시 상호작용 실행
+def doInteraction(location: str):
+    if location in interaction:
+        print(SEP)
+        print(f"\n  ★ {location}에 상점이 있습니다.")
+        a = input("  상점에 들어가시겠습니까? [y/n]: ")
+        if a == "y":
+            buy_item(location)
 
-# 주인공 상태 -> 딕셔너리 - 배고픔정도
+
+# 상호작용 - 아이템 구매하기
+def buy_item(location: str):
+    while True:
+        shop = interaction[location]
+        items = list(shop.items())
+        print("\n" + SEP)
+        print(f"[ {location} 상점 ] - 사용자 소지금 {char_stat['money']}원\n")
+        for i, (name, stock) in enumerate(items, 1):
+            price = item_dict[name][0]
+            print(f"  {i}. {name}  {price}원  (재고: {stock})")
+        print(SEP)
+        buy_input = input("구매할 아이템 번호 입력 (q: 닫기): ")
+        print()
+
+        if buy_input == "q":
+            break
+
+        name = None
+        if buy_input.isdigit():
+            idx = int(buy_input) - 1
+            if 0 <= idx < len(items):
+                name = items[idx][0]
+            else:
+                print("  없는 번호입니다.")
+                continue
+        elif buy_input in shop:
+            name = buy_input
+        else:
+            print("  없는 아이템입니다.")
+            continue
+
+        price = item_dict[name][0]
+        if shop[name] <= 0:
+            print("  재고가 없습니다.")
+        elif char_stat["money"] >= price:
+            char_stat["money"] -= price
+            shop[name] -= 1
+            if name in char_stat["bag"]:
+                char_stat["bag"][name] += 1
+            else:
+                char_stat["bag"][name] = 1
+            print(f"  → {name} 구매 완료 (잔액: {char_stat['money']}원)")
+        else:
+            print(f"  돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)")
+
+
+# ------------------ 변수 목록 ------------------#
+
+# 출력 구분선
+SEP = "-" * 40
+
+# 주인공 상태 -> 딕셔너리
 char_stat = {
-    "hp": 10,
-    "stamina": "배고픔",
-    "money": 50000,
-    "bag": {}
+    "hp": 10, 
+    "stamina": "배고픔", 
+    "money": 50000, 
+    "bag": {"두쫀쿠": 1}
 }
 
 # 환경 상태 -> 딕셔너리 - 시간
@@ -121,11 +190,16 @@ env_stat = {
 
 # 아이템 -> 딕셔너리 - [가격, 회복량]
 item_dict = {
-    "두쫀쿠": [2500, 25],
+    "두쫀쿠": [2500, 25], 
     "카페라떼": [5000, 25]
 }
 
-# 위치 -> 리스트 - [x,y]
+# 상호작용 -> 딕셔너리 - [가격, 재고]
+interaction = {
+    "학생회관": {"두쫀쿠": 50, "카페라떼": 100}
+}
+
+# 위치 -> 리스트 - [x, y]
 location = "연대앞 버스정류장"
 location_idx = [0, 0]
 
@@ -147,27 +221,26 @@ schoolMap = create_map(6, school_locations)
 settings = {"difficulty": ["쉬움", "보통", "어려움"]}
 
 
-#------------------ 메인 함수 ------------------#
+# ------------------ 메인 함수 ------------------#
 if __name__ == "__main__":
     print("\n" + "=" * 40)
-    print("출발! 당신은 지금 학교에 있습니다")
+    print(f"  출발! 당신은 지금 {location}에 있습니다.")
     print("=" * 40)
-    gameplay = True
-    
-    while gameplay:
-        user_input = input("\n이동할 방향을 입력하세요 (w/s/a/d): ")
-        
+    print("  조작: 이동(w/a/s/d) | 가방(b) | 상태(v) | 종료(q)")
+
+    while True:
+        user_input = input("\n입력: ")
+
         if user_input == "q":
+            print("\n" + SEP)
+            print("게임을 종료합니다")
             break
-        
+
         elif user_input == "v":
             print_status()
-            continue
 
         elif user_input == "b":
             open_bag()
-            continue 
 
-        move_char(user_input)
-        
-    
+        else:
+            move_char(user_input)
