@@ -10,6 +10,7 @@
 - Use items
 - Check status
 - Check bag
+- Set difficulty
 - Quit the game
 
 ## How to Play
@@ -17,6 +18,7 @@
 - w, a, s, d to move
 - v to print status
 - b to open bag
+- o to set difficulty
 - q to quit game
 
 ### Still On Progress
