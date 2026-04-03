@@ -1,6 +1,6 @@
 # farewellSongdo
 
-This is a text-based RPG game.  
+### This is a text-based RPG game.  
 *Created by Jaeyeol Lee for Course GAI2008*
 
 ## Features
