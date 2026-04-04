@@ -1,0 +1,5 @@
+char_stat: {'hp': 3, 'stamina': '배고픔', 'money': 0, 'bag': {'카페라떼': 3, '두쫀쿠': 14}}
+location: 대강당
+location_idx: [5, 2]
+env_stat: {'time': 1100}
+difficulty: 보통

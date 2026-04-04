@@ -200,8 +200,8 @@ def set_difficulty():
 def save_game():
     print("\n" + SEP_1)
     file_name = input("저장할 파일 이름을 입력하세요: ")
-    os.makedirs('save', exist_ok=True)
-    with open(f"save/{file_name}.txt", "w") as f:
+    os.makedirs('saves', exist_ok=True)
+    with open(f"saves/{file_name}.txt", "w") as f:
         f.write(f"char_stat: {char_stat}\n")
         f.write(f"location: {location}\n")
         f.write(f"location_idx: {location_idx}\n")
@@ -216,7 +216,7 @@ def load_game():
     global char_stat, location, location_idx, env_stat
     print("\n" + SEP_1)
     load_list = ["char_stat", "location", "location_idx", "env_stat", "difficulty"]
-    save_dir = "save"
+    save_dir = "saves"
     file_list = os.listdir(save_dir)
     for i, file in enumerate(file_list):
         print(f"{i+1}. {file}")
@@ -265,7 +265,7 @@ def load_game():
                 env_stat = eval(line[len(load_list[3]) + 2:])
             elif line.startswith(load_list[4] + ": "):
                 settings["difficulty"] = line[len(load_list[4]) + 2:]
-    print(f"  {file_name}으로 불러와졌습니다.")
+    print(f"  {file_name}을 불러왔습니다.")
     print(SEP_1)
 
 # ------------------ 변수 목록 ------------------#
