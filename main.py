@@ -3,7 +3,6 @@ import datetime
 
 # ------------------ 함수 목록 ------------------#
 
-
 # 지도 생성 : 리스트 - 지도, 지도 좌표
 def create_map(col: int, location: list) -> list:
     schoolMap = []
@@ -29,7 +28,7 @@ def move_char(loc_str: str):
 
     if loc_str not in directions:
         print("  잘못된 입력입니다.")
-        return
+        return 
 
     idx, num = directions[loc_str]
 
@@ -43,7 +42,7 @@ def move_char(loc_str: str):
         print("  막힌 방향입니다.")
 
     print(SEP_1)
-
+    
 
 # 이동 유효성 검사 : 불리언 - 이동 가능 여부
 def check_move(loc_idx: list, idx: int, num: int) -> bool:
@@ -134,14 +133,13 @@ def buy_item(location: str):
     while True:
         shop = interaction[location]
         items = list(shop.items())
-        print(SEP_1)
-        print(f"[ {location} 상점 ] - 사용자 소지금 {char_stat['money']}원\n")
+        print("\n" + SEP_1)
+        print(f"[ {location} 상점 ] - 소지금 {char_stat['money']}원\n")
         for i, (name, stock) in enumerate(items, 1):
             price = item_dict[name][0]
             print(f"  {i}. {name}  {price}원  (재고: {stock})")
         print(SEP_1)
         buy_input = input("구매할 아이템 번호 입력 (q: 닫기): ")
-        print()
 
         if buy_input == "q":
             break
@@ -170,9 +168,9 @@ def buy_item(location: str):
                 char_stat["bag"][name] += 1
             else:
                 char_stat["bag"][name] = 1
-            print(f"  → {name} 구매 완료 (잔액: {char_stat['money']}원)")
+            print(f"\n  → {name} 구매 완료 (잔액: {char_stat['money']}원)")
         else:
-            print(f"  돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)")
+            print(f"\n  돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)")
 
 
 # 난이도 설정 : idx 및 이름 기반 처리 - 시작 및 게임 도중 호출
@@ -202,7 +200,7 @@ def set_difficulty():
 def save_game():
     print("\n" + SEP_1)
     file_name = input("저장할 파일 이름을 입력하세요: ")
-    os.makedirs("save", exist_ok=True)
+    os.makedirs('save', exist_ok=True)
     with open(f"save/{file_name}.txt", "w") as f:
         f.write(f"char_stat: {char_stat}\n")
         f.write(f"location: {location}\n")
@@ -221,7 +219,7 @@ def load_game():
     save_dir = "save"
     file_list = os.listdir(save_dir)
     for i, file in enumerate(file_list):
-        print(f"{i + 1}. {file}")
+        print(f"{i+1}. {file}")
 
     file_name = input("불러올 파일 번호를 입력하세요 (0: 폴더 변경): ")
 
@@ -235,19 +233,19 @@ def load_game():
         file_list = os.listdir(save_dir)
 
         for i, file in enumerate(file_list):
-            print(f"{i + 1}. {file}")
+            print(f"{i+1}. {file}")
 
         file_name = input("불러올 파일 번호를 입력하세요: ")
 
         if file_name.isdigit() and 1 <= int(file_name) <= len(file_list):
-            file_name = file_list[int(file_name) - 1]
+            file_name = file_list[int(file_name)-1]
         else:
             print("  잘못된 입력입니다.")
             print(SEP_1)
             return
 
     elif file_name.isdigit() and 1 <= int(file_name) <= len(file_list):
-        file_name = file_list[int(file_name) - 1]
+        file_name = file_list[int(file_name)-1]
 
     else:
         print("  잘못된 입력입니다.")
@@ -258,18 +256,17 @@ def load_game():
         for line in save_file:
             line = line.strip()
             if line.startswith(load_list[0] + ": "):
-                char_stat = eval(line[len(load_list[0]) + 2 :])
+                char_stat = eval(line[len(load_list[0]) + 2:])
             elif line.startswith(load_list[1] + ": "):
-                location = line[len(load_list[1]) + 2 :]
+                location = line[len(load_list[1]) + 2:]
             elif line.startswith(load_list[2] + ": "):
-                location_idx = eval(line[len(load_list[2]) + 2 :])
+                location_idx = eval(line[len(load_list[2]) + 2:])
             elif line.startswith(load_list[3] + ": "):
-                env_stat = eval(line[len(load_list[3]) + 2 :])
+                env_stat = eval(line[len(load_list[3]) + 2:])
             elif line.startswith(load_list[4] + ": "):
-                settings["difficulty"] = line[len(load_list[4]) + 2 :]
+                settings["difficulty"] = line[len(load_list[4]) + 2:]
     print(f"  {file_name}으로 불러와졌습니다.")
     print(SEP_1)
-
 
 # ------------------ 변수 목록 ------------------#
 
@@ -278,16 +275,28 @@ SEP_1 = "-" * 60
 SEP_2 = "=" * 60
 
 # 주인공 상태 -> 딕셔너리
-char_stat = {"hp": 10, "stamina": "배고픔", "money": 50000, "bag": {}}
+char_stat = {
+    "hp": 10, 
+    "stamina": "배고픔", 
+    "money": 50000, 
+    "bag": {}
+}
 
 # 환경 상태 -> 딕셔너리 - 시간
-env_stat = {"time": 1100}
+env_stat = {
+    "time": 1100
+}
 
 # 아이템 -> 딕셔너리 - [가격, 회복량]
-item_dict = {"두쫀쿠": [2500, 25], "카페라떼": [5000, 25]}
+item_dict = {
+    "두쫀쿠": [2500, 25], 
+    "카페라떼": [5000, 25]
+}
 
 # 상호작용 -> 딕셔너리 - [가격, 재고]
-interaction = {"학생회관": {"두쫀쿠": 50, "카페라떼": 100}}
+interaction = {
+    "학생회관": {"두쫀쿠": 50, "카페라떼": 100}
+}
 
 # 위치 -> 리스트 - [x, y]
 location = "연대앞 버스정류장"
@@ -295,55 +304,22 @@ location_idx = [0, 0]
 
 # 학교 위치 -> 연대앞 버스정류장 ~ 이윤재관
 school_locations = [
-    "연대앞버스정류장",
-    "정문",
-    "스타벅스",
-    "세브란스병원버스정류장",
-    None,
-    None,
-    "공학원",
-    "백양로1",
-    "공터1",
-    "암병원",
-    "의과대학",
-    None,
-    "공학관",
-    "백양로2",
-    "백주년기념관",
-    "안과병원",
-    "제중관",
-    None,
-    "체육관",
-    "백양로3",
-    "공터2",
-    "광혜원",
-    "어린이병원",
-    "세브란스병원",
-    "중앙도서관",
-    "독수리상",
-    "학생회관",
-    "루스채플",
-    "재활병원",
-    "치과대학",
-    "백양관",
-    "백양로5",
-    "대강당",
-    "음악관",
-    "알렌관",
-    "ABMRC",
-    None,
-    None,
-    None,
-    None,
-    "새천년관",
-    "이윤재관",
+    "연대앞 버스정류장", "정문", "스타벅스", "세브란스병원 버스정류장", None, None,
+    "공학원", "백양로1", "공터1", "암병원", "의과대학", None,
+    "공학관", "백양로2", "백주년기념관", "안과병원", "제중관", None,
+    "체육관", "백양로3", "공터2", "광혜원", "어린이병원", "세브란스병원",
+    "중앙도서관", "독수리상", "학생회관", "루스채플", "재활병원", "치과대학",
+    "백양관", "백양로5", "대강당", "음악관", "알렌관", "ABMRC",
+    None, None, None, None, "새천년관", "이윤재관",
 ]
 
 # 함수 생성 -> 학교 지도 및 좌표 - n개의 열을 가지는 지도 생성
 schoolMap = create_map(6, school_locations)
 
 # 설정 -> 딕셔너리 - 난이도
-settings = {"difficulty": "보통"}
+settings = {
+    "difficulty": "보통"
+}
 
 
 # ------------------ 메인 함수 ------------------#
@@ -352,11 +328,10 @@ if __name__ == "__main__":
     print("\n" + SEP_2)
     print(f"  당신은 지금 {location}에 있습니다.")
     print(SEP_2)
+    
 
     while True:
-        print(
-            "\n  조작: 이동(w/a/s/d) | 가방(b) | 상태(v) | 설정(o) | 저장(1) | 불러오기(2) | 종료(q)"
-        )
+        print("\n  조작: 이동(w/a/s/d) | 가방(b) | 상태(v) | 설정(o) | 저장(1) | 불러오기(2) | 종료(q)")
         user_input = input("\n입력: ")
 
         if user_input == "q":
@@ -364,13 +339,13 @@ if __name__ == "__main__":
             print("게임을 종료합니다")
             print(SEP_1)
             break
-
+        
         elif user_input == "v":
             print_status()
 
         elif user_input == "b":
             open_bag()
-
+        
         elif user_input == "o":
             set_difficulty()
 
