@@ -18,7 +18,6 @@ def create_map(col: int, location: list) -> list:
 # 이동 : 입력이 유효한지 판단 후 이동 출력
 def move_char(loc_str: str):
     print("\n" + SEP_1)
-    char_stat["hp"] -= 1
     directions = {
         "w": (0, 1),
         "s": (0, -1),
@@ -33,6 +32,7 @@ def move_char(loc_str: str):
     idx, num = directions[loc_str]
 
     if check_move(location_idx, idx, num):
+        char_stat["hp"] -= 1
         global location
         location_idx[idx] += num
         location = schoolMap[location_idx[0]][location_idx[1]]
