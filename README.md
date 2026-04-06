@@ -11,6 +11,7 @@
 - Check status
 - Check bag
 - Set difficulty
+- Save and Load game
 - Quit the game
 
 ## How to Play
@@ -19,6 +20,8 @@
 - v to print status
 - b to open bag
 - o to set difficulty
+- 1 to save game
+- 2 to load game
 - q to quit game
 
 ### Still On Progress
