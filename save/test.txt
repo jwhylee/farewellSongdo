@@ -1,5 +1,0 @@
-char_stat: {'hp': 3, 'stamina': '배고픔', 'money': 50000, 'bag': {}}
-location: 대강당
-location_idx: [5, 2]
-env_stat: {'time': 1100}
-difficulty: 보통
