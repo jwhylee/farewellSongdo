@@ -17,8 +17,8 @@ def create_map(col: int, location: list) -> list:
 # ------------------ 출력 함수 ------------------#
 
 # 기본 출력
-def main_output(message: str, loc_idx: list, col: int=6, row: int=7):
-    cell_w = 10
+def main_output(message: str, loc_idx: list, col: int = 6, row: int = 7):
+    cell_w = 11
     h_line = "+" + (("-" * cell_w + "+") * col)
     eq_line = "=" * (cell_w * col + col + 1)
     lines = []
@@ -46,28 +46,28 @@ def main_output(message: str, loc_idx: list, col: int=6, row: int=7):
     print(eq_line)
 
 # 상태 출력
-def status_output(texts: list, width: int = 60, height: int = 13):
+def status_output(texts: list, message: str, width: int = 73, height: int = 13):
     while True:
         print("=" * width)
         print(f"[위치]: {location}")
         print(f"[HP]: {char_stat['hp']}")
         print("=" * width)
         for text in texts:
-            print(text) 
+            print(text)
         for _ in range(max(0, height - len(texts))):
             print()
         print("=" * width)
-        print("현재 사용자의 상태입니다(q: 상태창 닫기)")
+        print(message)
         print("=" * width)
         user_input = input("> ")
         if user_input == "q":
             main_output("상태창을 닫았습니다", location_idx)
             break
         else:
-            print("잘못된 입력입니다.")
+            message = "잘못된 입력입니다."
 
 # 가방 출력
-def bag_output(texts: list, message: str, width: int = 60, height: int = 13):
+def bag_output(texts: list, message: str, width: int = 73, height: int = 13):
     while True:
         print("=" * width)
         print(f"[위치]: {location}")
@@ -121,7 +121,6 @@ def move_char(loc_str: str):
     else:
         return "막힌 방향입니다."
 
-
 # 이동 유효성 검사 : 불리언 - 이동 가능 여부
 def check_move(loc_idx: list, idx: int, num: int) -> bool:
     afterMove = loc_idx.copy()
@@ -137,9 +136,10 @@ def check_move(loc_idx: list, idx: int, num: int) -> bool:
 
     return validity
 
+
 # ------------------ 상태 함수 ------------------#
 
-# 상태 출력
+# 상태 출력 리스트
 def print_status():
     printStat = []
     printStat.append(f"1. 소지금: {char_stat['money']}원")
@@ -151,14 +151,15 @@ def print_status():
     printStat.append(f"7. 북쪽위치: {schoolMap[location_idx[0] + 1][location_idx[1]]}")
     return printStat
 
+
 # ------------------ 가방 함수 ------------------#
 
+# 가방 확인 : T/F 반환
 def check_bag():
     if char_stat["bag"]:
         return True
     else:
         return False
-
 
 # 가방 열기 : 아이템 이름 및 특성 출력
 def open_bag():
@@ -167,8 +168,7 @@ def open_bag():
         hp_recover = item_dict[name][1]
         openBag.append(f"  {i}. {name}  x{count}  (HP +{hp_recover})")
     return openBag
-        
-        
+
 # 아이템 사용 : idx 기반 및 이름 기반 처리
 def use_item(user_input: str):
     items = list(char_stat["bag"].items())
@@ -178,23 +178,25 @@ def use_item(user_input: str):
         if 0 <= idx < len(items):
             name = items[idx][0]
         else:
-            return ("없는 번호입니다.")
+            return "없는 번호입니다."
     elif user_input in char_stat["bag"]:
         name = user_input
     else:
-        return ("가방에 없는 아이템입니다.")
+        return "가방에 없는 아이템입니다."
 
     recover = item_dict[name][1]
     char_stat["hp"] += recover
     char_stat["bag"][name] -= 1
-    message = f"→ {name}(을)를 사용했습니다. (HP +{recover}, 현재 HP: {char_stat['hp']})"
+    message = (
+        f"→ {name}(을)를 사용했습니다. (HP +{recover}, 현재 HP: {char_stat['hp']})"
+    )
     clean_inventory()
     return message
-
 
 # 가방 정리 : 0개인 아이템 제거
 def clean_inventory():
     char_stat["bag"] = {k: v for k, v in char_stat["bag"].items() if v != 0}
+
 
 # ------------------ 상호작용 함수 ------------------#
 
@@ -252,9 +254,10 @@ def buy_item(location: str):
                 f"\n  돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)"
             )
 
+
 # ------------------ 난이도 설정 함수 ------------------#
 
-# 난이도 설정 : idx 및 이름 기반 처리 - 시작 및 게임 도중 호출
+# 난이도 설정 : idx 및 이름 기반 처리 - 시작 및 게임 도중 호출 ### 추후 반영 예정
 def set_difficulty():
     difficulty = ["쉬움", "보통", "어려움"]
     prepGame = True
@@ -284,7 +287,6 @@ def save_game():
         f.write(f"location_idx: {location_idx}\n")
         f.write(f"difficulty: {settings['difficulty']}\n")
     print(f"  {file_name}으로 저장되었습니다.")
-
 
 # 게임 불러오기 : 폴더에서 파일 선택 후 각 요소 불러오기 - 폴더 변경 가능
 def load_game():
@@ -354,13 +356,13 @@ location_idx = [0, 0]
 
 # 학교 위치 -> 연대앞 버스정류장 ~ 이윤재관
 school_locations = [
-    "연대앞 버스정류장","정문","스타벅스","세브란스병원 버스정류장",None,None,
-    "공학원","백양로1","공터1","암병원","의과대학",None,
-    "공학관","백양로2","백주년기념관","안과병원","제중관",None,
-    "체육관","백양로3","공터2","광혜원","어린이병원","세브란스병원",
-    "중앙도서관","독수리상","학생회관","루스채플","재활병원","치과대학",
-    "백양관","백양로5","대강당","음악관","알렌관","ABMRC",
-    None,None,None,None,"새천년관","이윤재관",
+    "연대앞 버스정류장", "정문", "스타벅스", "세브란스병원 버스정류장", None, None, 
+    "공학원","백양로1", "공터1", "암병원", "의과대학", None, 
+    "공학관","백양로2", "백주년기념관", "안과병원", "제중관", None, 
+    "체육관","백양로3", "공터2", "광혜원", "어린이병원", "세브란스병원", 
+    "중앙도서관","독수리상", "학생회관", "루스채플", "재활병원", "치과대학", 
+    "백양관","백양로5", "대강당", "음악관", "알렌관", "ABMRC", 
+    None, None, None, None, "새천년관", "이윤재관",
 ]
 
 # 함수 생성 -> 학교 지도 및 좌표 - n개의 열을 가지는 지도 생성
@@ -371,16 +373,19 @@ settings = {"difficulty": "보통"}
 
 # ------------------ 메인 함수 ------------------#
 if __name__ == "__main__":
-    main_output("[w a s d] 이동 | [i] 상태창 | [b] 가방 | [q] 종료", location_idx)
+    main_output("[w/a/s/d]이동 [f]상호작용 [v]상태창 [b]가방 [1/2]저장/불러오기 [q]종료", location_idx)
     while True:
         user_input = input("> ")
         if user_input == "q":
             break
-        elif user_input == "i":
-            status_output(print_status())
+        elif user_input == "v":
+            status_output(print_status(), "현재 사용자의 상태입니다(q: 상태창 닫기)")
         elif user_input == "b":
             if check_bag():
-                bag_output(open_bag(), "사용할 아이템의 숫자 혹은 이름을 입력하시오(q: 가방 닫기)")
+                bag_output(
+                    open_bag(),
+                    "사용할 아이템의 숫자 혹은 이름을 입력하시오(q: 가방 닫기)",
+                )
             else:
                 main_output("가방이 비어있습니다.", location_idx)
         else:
