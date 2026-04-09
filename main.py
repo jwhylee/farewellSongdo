@@ -17,14 +17,14 @@ def create_map(col: int, location: list) -> list:
 # ------------------ 출력 함수 ------------------#
 
 # 기본 출력
-def main_output(message: str, loc_idx: list, col=6, row=7):
+def main_output(message: str, loc_idx: list, col: int=6, row: int=7):
     cell_w = 10
     h_line = "+" + (("-" * cell_w + "+") * col)
     eq_line = "=" * (cell_w * col + col + 1)
     lines = []
     print(eq_line)
-    print(f" 위치: {location}")
-    print(f" HP: {char_stat['hp']}")
+    print(f"[위치]: {location}")
+    print(f"[HP]: {char_stat['hp']}")
     for r in range(row - 1, -1, -1):
         if r == row - 1:
             lines.append(eq_line)
@@ -45,6 +45,57 @@ def main_output(message: str, loc_idx: list, col=6, row=7):
     print(message)
     print(eq_line)
 
+# 상태 출력
+def status_output(texts: list, width: int = 60, height: int = 13):
+    while True:
+        print("=" * width)
+        print(f"[위치]: {location}")
+        print(f"[HP]: {char_stat['hp']}")
+        print("=" * width)
+        for text in texts:
+            print(text) 
+        for _ in range(max(0, height - len(texts))):
+            print()
+        print("=" * width)
+        print("현재 사용자의 상태입니다(q: 상태창 닫기)")
+        print("=" * width)
+        user_input = input("> ")
+        if user_input == "q":
+            main_output("상태창을 닫았습니다", location_idx)
+            break
+        else:
+            print("잘못된 입력입니다.")
+
+# 가방 출력
+def bag_output(texts: list, message: str, width: int = 60, height: int = 13):
+    while True:
+        print("=" * width)
+        print(f"[위치]: {location}")
+        print(f"[HP]: {char_stat['hp']}")
+        print("=" * width)
+        for text in texts:
+            print(text)
+        for _ in range(max(0, height - len(texts))):
+            print()
+        print("=" * width)
+        print(message)
+        print("=" * width)
+        user_input = input("> ")
+        if user_input == "q":
+            main_output("가방을 닫았습니다.", location_idx)
+            break
+        else:
+            useItem = use_item(user_input)
+            if check_bag():
+                texts = open_bag()
+                message = useItem
+            else:
+                main_output(useItem, location_idx)
+                break
+
+# 상호작용 출력
+
+
 # ------------------ 이동 함수 ------------------#
 
 # 이동 : 입력이 유효한지 판단 후 이동 출력
@@ -57,7 +108,7 @@ def move_char(loc_str: str):
     }
 
     if loc_str not in directions:
-        return " 잘못된 입력입니다."
+        return "잘못된 입력입니다."
 
     idx, num = directions[loc_str]
 
@@ -66,9 +117,9 @@ def move_char(loc_str: str):
         global location
         location_idx[idx] += num
         location = schoolMap[location_idx[0]][location_idx[1]]
-        return f" {location}(으)로 이동했습니다."
+        return f"{location}(으)로 이동했습니다."
     else:
-        return " 막힌 방향입니다."
+        return "막힌 방향입니다."
 
 
 # 이동 유효성 검사 : 불리언 - 이동 가능 여부
@@ -91,29 +142,33 @@ def check_move(loc_idx: list, idx: int, num: int) -> bool:
 # 상태 출력
 def print_status():
     printStat = []
-    printStat.append("[ 상태 ]")
-    printStat.append(f"  체력:   {char_stat['hp']}")
-    printStat.append(f"  소지금: {char_stat['money']}원")
+    printStat.append(f"1. 소지금: {char_stat['money']}원")
+    printStat.append(f"2. 체력:   {char_stat['hp']}")
+    printStat.append(f"3. 위치: {location}")
+    printStat.append(f"4. 동쪽위치: {schoolMap[location_idx[0]][location_idx[1] + 1]}")
+    printStat.append(f"5. 서쪽위치: {schoolMap[location_idx[0]][location_idx[1] - 1]}")
+    printStat.append(f"6. 남쪽위치: {schoolMap[location_idx[0] - 1][location_idx[1]]}")
+    printStat.append(f"7. 북쪽위치: {schoolMap[location_idx[0] + 1][location_idx[1]]}")
     return printStat
 
 # ------------------ 가방 함수 ------------------#
 
+def check_bag():
+    if char_stat["bag"]:
+        return True
+    else:
+        return False
+
+
 # 가방 열기 : 아이템 이름 및 특성 출력
 def open_bag():
-    while True:
-        print("[ 가방 ]")
-        if not char_stat["bag"]:
-            print("  가방이 비어있습니다.")
-            break
-        for i, (name, count) in enumerate(char_stat["bag"].items(), 1):
-            hp_recover = item_dict[name][1]
-            print(f"  {i}. {name}  x{count}  (HP +{hp_recover})")
-        user_input = input("사용할 아이템 번호 입력 (q: 닫기): ")
-        if user_input == "q":
-            break
-        use_item(user_input)
-
-
+    openBag = []
+    for i, (name, count) in enumerate(char_stat["bag"].items(), 1):
+        hp_recover = item_dict[name][1]
+        openBag.append(f"  {i}. {name}  x{count}  (HP +{hp_recover})")
+    return openBag
+        
+        
 # 아이템 사용 : idx 기반 및 이름 기반 처리
 def use_item(user_input: str):
     items = list(char_stat["bag"].items())
@@ -123,19 +178,18 @@ def use_item(user_input: str):
         if 0 <= idx < len(items):
             name = items[idx][0]
         else:
-            print("  없는 번호입니다.")
-            return
+            return ("없는 번호입니다.")
     elif user_input in char_stat["bag"]:
         name = user_input
     else:
-        print("  가방에 없는 아이템입니다.")
-        return
+        return ("가방에 없는 아이템입니다.")
 
     recover = item_dict[name][1]
     char_stat["hp"] += recover
     char_stat["bag"][name] -= 1
-    print(f"\n  → {name} 사용 (HP +{recover}, 현재 HP: {char_stat['hp']})")
+    message = f"→ {name}(을)를 사용했습니다. (HP +{recover}, 현재 HP: {char_stat['hp']})"
     clean_inventory()
+    return message
 
 
 # 가방 정리 : 0개인 아이템 제거
@@ -317,11 +371,18 @@ settings = {"difficulty": "보통"}
 
 # ------------------ 메인 함수 ------------------#
 if __name__ == "__main__":
-    main_output("(w a s d 로 이동 | q: 종료)", location_idx)
+    main_output("[w a s d] 이동 | [i] 상태창 | [b] 가방 | [q] 종료", location_idx)
     while True:
         user_input = input("> ")
         if user_input == "q":
             break
+        elif user_input == "i":
+            status_output(print_status())
+        elif user_input == "b":
+            if check_bag():
+                bag_output(open_bag(), "사용할 아이템의 숫자 혹은 이름을 입력하시오(q: 가방 닫기)")
+            else:
+                main_output("가방이 비어있습니다.", location_idx)
         else:
             message = move_char(user_input)
             main_output(message, location_idx)
