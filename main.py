@@ -36,7 +36,7 @@ def move_char(loc_str: str):
         global location
         location_idx[idx] += num
         location = schoolMap[location_idx[0]][location_idx[1]]
-        print(f"  현재 위치: {location}")
+        print(f"  현재 위치: {location}")w
         do_interaction(location)
     else:
         print("  막힌 방향입니다.")
@@ -205,7 +205,6 @@ def save_game():
         f.write(f"char_stat: {char_stat}\n")
         f.write(f"location: {location}\n")
         f.write(f"location_idx: {location_idx}\n")
-        f.write(f"env_stat: {env_stat}\n")
         f.write(f"difficulty: {settings['difficulty']}\n")
     print(f"  {file_name}으로 저장되었습니다.")
     print(SEP_1)
@@ -215,7 +214,7 @@ def save_game():
 def load_game():
     global char_stat, location, location_idx, env_stat
     print("\n" + SEP_1)
-    load_list = ["char_stat", "location", "location_idx", "env_stat", "difficulty"]
+    load_list = ["char_stat", "location", "location_idx", "difficulty"]
     save_dir = "saves"
     file_list = os.listdir(save_dir)
     for i, file in enumerate(file_list):
@@ -252,7 +251,7 @@ def load_game():
         print(SEP_1)
         return
 
-    with open(os.path.join(save_dir, file_name), "r", encoding="utf-8") as save_file:
+    with open(os.path.join(save_dir, file_name), "r") as save_file:
         for line in save_file:
             line = line.strip()
             if line.startswith(load_list[0] + ": "):
@@ -262,9 +261,7 @@ def load_game():
             elif line.startswith(load_list[2] + ": "):
                 location_idx = eval(line[len(load_list[2]) + 2:])
             elif line.startswith(load_list[3] + ": "):
-                env_stat = eval(line[len(load_list[3]) + 2:])
-            elif line.startswith(load_list[4] + ": "):
-                settings["difficulty"] = line[len(load_list[4]) + 2:]
+                settings["difficulty"] = line[len(load_list[3]) + 2:]
     print(f"  {file_name}을 불러왔습니다.")
     print(SEP_1)
 
@@ -280,11 +277,6 @@ char_stat = {
     "stamina": "배고픔", 
     "money": 50000, 
     "bag": {}
-}
-
-# 환경 상태 -> 딕셔너리 - 시간
-env_stat = {
-    "time": 1100
 }
 
 # 아이템 -> 딕셔너리 - [가격, 회복량]
