@@ -15,15 +15,83 @@ def create_map(col: int, location: list) -> list:
             rMap = []
     return schoolMap
 
+# 도움말 출력 리스트
+def print_help():
+    printHelp = []
+    printHelp.append("< 게임 조작법 >")
+    printHelp.append(f"[w/s/a/d]: 상하좌우로 이동")
+    printHelp.append(f"[v]: 현재 상태 확인")
+    printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
+    printHelp.append(f"[h]: 도움말 확인")
+    printHelp.append(f"[1/2]: 게임 저장하기/불러오기")
+    printHelp.append(f"[q]: 게임 종료하기")
+    return printHelp
 
+# 난이도 설정 리스트
+def print_setdifficulty():
+    printSetdifficulty = []
+    printSetdifficulty.append("")
+    printSetdifficulty.append("< 난이도 설정 >")
+    printSetdifficulty.append(f"1. 쉬움")
+    printSetdifficulty.append(f"2. 보통")
+    printSetdifficulty.append(f"3. 어려움")
+    return printSetdifficulty
+    
 # ------------------ 출력 함수 ------------------#
 
-# 초기 출력
-def initial_output():
-    return
+# 초기 출력 : 게임 설명 및 난이도 설정
+def initial_output(texts: list, message: str, width: int = 73, height: int = 13):
+    prepGame = True
+    difficulty = ["쉬움", "보통", "어려움"]
+    while prepGame:
+        prepGame = False
+        print("=" * width)
+        print(f"[↑] 해당 게임은 화살표 위에 있는 === 줄에")
+        print(f"    터미널 사이즈를 맞추는 것을 추천드립니다.")
+        print("=" * width)
+        for text in texts:
+            print(text)
+        for _ in range(max(0, height - len(texts))):
+            print()
+        print("=" * width)
+        print(message)
+        print("=" * width)
+        user_input = input("> ")
+        if user_input == "1" or user_input == "쉬움":
+            settings["difficulty"] = difficulty[0]
+        elif user_input == "2" or user_input == "보통":
+            settings["difficulty"] = difficulty[1]
+        elif user_input == "3" or user_input == "어려움":
+            settings["difficulty"] = difficulty[2]
+        else:
+            message = "잘못된 입력입니다"
+            prepGame = True
 
 
-# 기본 출력
+# 도움말 출력 : 
+def help_output(texts: list, message: str, width: int = 73, height: int = 13):
+    global game_start
+    while True:
+        print("=" * width)
+        print(f"[위치]: {location}")
+        print(f"[HP]: {char_stat['hp']}")
+        print("=" * width)
+        for text in texts:
+            print(text)
+        for _ in range(max(0, height - len(texts))):
+            print()
+        print("=" * width)
+        print(message)
+        print("=" * width)
+        user_input = input("> ")
+        if user_input == "q":
+            main_output("게임조작법창을 닫았습니다", location_idx)
+            break
+        else:
+            message = "잘못된 입력입니다."
+
+
+# 기본 출력 : 게임의 기본 화면
 def main_output(message: str, loc_idx: list, col: int = 6, row: int = 7):
     cell_w = 11
     h_line = "+" + (("-" * cell_w + "+") * col)
@@ -53,7 +121,7 @@ def main_output(message: str, loc_idx: list, col: int = 6, row: int = 7):
     print(eq_line)
 
 
-# 상태 출력
+# 상태 출력 : 상태창 출력
 def status_output(texts: list, message: str, width: int = 73, height: int = 13):
     while True:
         print("=" * width)
@@ -75,7 +143,7 @@ def status_output(texts: list, message: str, width: int = 73, height: int = 13):
             message = "잘못된 입력입니다."
 
 
-# 가방 출력
+# 가방 출력 : 가방 출력 및 아이템 사용
 def bag_output(texts: list, message: str, width: int = 73, height: int = 13):
     while True:
         print("=" * width)
@@ -103,7 +171,7 @@ def bag_output(texts: list, message: str, width: int = 73, height: int = 13):
                 break
 
 
-# 불러오기 출력
+# 불러오기 출력 : 저장된 파일 목록 출력 및 불러오기
 def load_output(save_dir: str, message: str, width: int = 73, height: int = 13):
     save_dir_ = save_dir
     texts = load_game_list(save_dir)[0]
@@ -320,27 +388,6 @@ def buy_item(location: str):
             )
 
 
-# ------------------ 난이도 설정 함수 ------------------#
-
-# 난이도 설정 : idx 및 이름 기반 처리 - 시작 및 게임 도중 호출 ### 추후 반영 예정
-def set_difficulty():
-    difficulty = ["쉬움", "보통", "어려움"]
-    prepGame = True
-    while prepGame:
-        prepGame = False
-        diff = input("난이도를 설정하시오 - [1. 쉬움, 2. 보통, 3. 어려움]: ")
-        if diff == "1" or diff == "쉬움":
-            settings["difficulty"] = difficulty[0]
-        elif diff == "2" or diff == "보통":
-            settings["difficulty"] = difficulty[1]
-        elif diff == "3" or diff == "어려움":
-            settings["difficulty"] = difficulty[2]
-        else:
-            print("\n  잘못된 입력입니다\n")
-            prepGame = True
-    print(f"  난이도가 {settings['difficulty']}으로 설정되었습니다.")
-
-
 # ------------------ 게임 저장/불러오기 함수 ------------------#
 
 # 게임 저장하기 : 폴더 생성 후 각 요소 추가하기 ++ 임무, 모든 입력
@@ -396,7 +443,7 @@ def load_game(save_dir, file_name):
 # ------------------ 변수 목록 ------------------#
 
 # 주인공 상태 -> 딕셔너리
-char_stat = {"hp": 10, "stamina": "배고픔", "money": 50000, "bag": {}}
+char_stat = {"hp": 10, "money": 50000, "bag": {}}
 
 # 아이템 -> 딕셔너리 - [가격, 회복량]
 item_dict = {"두쫀쿠": [2500, 25], "카페라떼": [5000, 25]}
@@ -425,28 +472,30 @@ schoolMap = create_map(6, school_locations)
 # 설정 -> 딕셔너리 - 난이도
 settings = {"difficulty": "보통"}
 
+
 # ------------------ 메인 함수 ------------------#
 if __name__ == "__main__":
-    main_output(
-        "[w/a/s/d]이동 [f]상호작용 [v]상태창 [t]임무 [b]가방 [1/2]저장/불러오기 [q]종료",
-        location_idx,
-    )
+    initial_output(print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다.")
+    main_output("송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.", location_idx)
     while True:
         user_input = input("> ")
         if user_input == "q":
             break
 
         elif user_input == "v":
-            status_output(print_status(), "현재 사용자의 상태입니다(q: 상태창 닫기)")
+            status_output(print_status(), "현재 사용자의 상태입니다(q: 닫기)")
 
         elif user_input == "b":
             if check_bag():
                 bag_output(
                     open_bag(),
-                    "사용할 아이템의 숫자 혹은 이름을 입력하시오(q: 가방 닫기)",
+                    "사용할 아이템의 숫자 혹은 이름을 입력하시오(q: 닫기)",
                 )
             else:
                 main_output("가방이 비어있습니다.", location_idx)
+
+        elif user_input == "h":
+            help_output(print_help(), "조작법에 해당되는 키를 입력하여 게임을 진행하시오. (q: 닫기)")
 
         elif user_input == "1":
             main_output("저장할 파일 이름을 입력하세요: ", location_idx)
