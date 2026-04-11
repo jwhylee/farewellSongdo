@@ -2,6 +2,7 @@
 
 ### This is a text-based RPG game.  
 Game Language : Korean
+
 *Created by Jaeyeol Lee for Course GAI2008*
 
 ## Features
