@@ -5,6 +5,21 @@ import os
 # ---------------------------- 출력 함수 -----------------------------#
 
 
+# 공통 출력
+def common_output(texts: list, message: str, width: int = 73, height: int = 13):
+    print("=" * width)
+    print(f"[위치]: {location}")
+    print(f"[HP]: {char_stat['hp']}")
+    print("=" * width)
+    for text in texts:
+        print(text)
+    for _ in range(max(0, height - len(texts))):
+        print()
+    print("=" * width)
+    print(message)
+    print("=" * width)
+
+
 # 초기 출력 : 게임 설명 및 난이도 설정
 def initial_output(texts: list, message: str, width: int = 73, height: int = 13):
     prepGame = True
@@ -32,29 +47,6 @@ def initial_output(texts: list, message: str, width: int = 73, height: int = 13)
         else:
             message = "잘못된 입력입니다"
             prepGame = True
-
-
-# 도움말 출력 :
-def help_output(texts: list, message: str, width: int = 73, height: int = 13):
-    global game_start
-    while True:
-        print("=" * width)
-        print(f"[위치]: {location}")
-        print(f"[HP]: {char_stat['hp']}")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
-        user_input = input("> ")
-        if user_input == "q":
-            main_output("게임조작법창을 닫았습니다", location_idx)
-            break
-        else:
-            message = "잘못된 입력입니다."
 
 
 # 기본 출력 : 게임의 기본 화면
@@ -87,20 +79,22 @@ def main_output(message: str, loc_idx: list, col: int = 6, row: int = 7):
     print(eq_line)
 
 
-# 상태 출력 : 상태창 출력
-def status_output(texts: list, message: str, width: int = 73, height: int = 13):
+# 도움말 출력
+def help_output(texts: list, message: str):
     while True:
-        print("=" * width)
-        print(f"[위치]: {location}")
-        print(f"[HP]: {char_stat['hp']}")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
+        common_output(texts, message)
+        user_input = input("> ")
+        if user_input == "q":
+            main_output("게임조작법창을 닫았습니다", location_idx)
+            break
+        else:
+            message = "잘못된 입력입니다."
+
+
+# 상태 출력 : 상태창 출력
+def status_output(texts: list, message: str):
+    while True:
+        common_output(texts, message)
         user_input = input("> ")
         if user_input == "q":
             main_output("상태창을 닫았습니다", location_idx)
@@ -110,19 +104,9 @@ def status_output(texts: list, message: str, width: int = 73, height: int = 13):
 
 
 # 가방 출력 : 가방 출력 및 아이템 사용
-def bag_output(texts: list, message: str, width: int = 73, height: int = 13):
+def bag_output(texts: list, message: str):
     while True:
-        print("=" * width)
-        print(f"[위치]: {location}")
-        print(f"[HP]: {char_stat['hp']}")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
+        common_output(texts, message)
         user_input = input("> ")
         if user_input == "q":
             main_output("가방을 닫았습니다.", location_idx)
@@ -138,23 +122,13 @@ def bag_output(texts: list, message: str, width: int = 73, height: int = 13):
 
 
 # 불러오기 출력 : 저장된 파일 목록 출력 및 불러오기
-def load_output(save_dir: str, message: str, width: int = 73, height: int = 13):
+def load_output(save_dir: str, message: str):
     save_dir_ = save_dir
     texts = load_game_list(save_dir)[0]
     dir_list = load_game_list(save_dir)[1]
     change_dir = False
     while True:
-        print("=" * width)
-        print(f"[위치]: {location}")
-        print(f"[HP]: {char_stat['hp']}")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
+        common_output(texts, message)
 
         if change_dir:
             save_dir = input("> ")
@@ -187,19 +161,9 @@ def load_output(save_dir: str, message: str, width: int = 73, height: int = 13):
 
 
 # 상점 출력 : 상점 출력 및 아이템 구매
-def shop_output(texts: list, message: str, location: str, width: int = 73, height: int = 13):
+def shop_output(texts: list, message: str, location: str):
     while True:
-        print("=" * width)
-        print(f"[위치]: {location}")
-        print(f"[HP]: {char_stat['hp']}")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
+        common_output(texts, message)
         user_input = input("> ")
         
         if user_input == "q":
@@ -239,19 +203,9 @@ def shop_output(texts: list, message: str, location: str, width: int = 73, heigh
 
 
 # 상호작용 선택 출력 : 상호작용 선택 및 실행
-def interaction_output(texts: list, message: str, location: str, width: int = 73, height: int = 13):
+def interaction_output(texts: list, message: str, location: str):
     while True:
-        print("=" * width)
-        print(f"[위치]: {location}")
-        print(f"[HP]: {char_stat['hp']}")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
+        common_output(texts, message)
         user_input = input("> ")
         
         if user_input == "q":
@@ -268,19 +222,9 @@ def interaction_output(texts: list, message: str, location: str, width: int = 73
 
 
 # 임무 출력 : 현재 사용자의 임무 출력
-def task_output(texts: list, message: str, width: int = 73, height: int = 13):
+def task_output(texts: list, message: str):
     while True:
-        print("=" * width)
-        print(f"[위치]: {location}")
-        print(f"[HP]: {char_stat['hp']}")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
+        common_output(texts, message)
         user_input = input("> ")
         if user_input == "q":
             main_output("임무창을 닫았습니다.", location_idx)
@@ -309,9 +253,10 @@ def print_help():
     printHelp = []
     printHelp.append("< 게임 조작법 >")
     printHelp.append(f"[w/s/a/d]: 상하좌우로 이동")
-    printHelp.append(f"[v]: 현재 상태 확인")
-    printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
     printHelp.append(f"[f]: 상호작용")
+    printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
+    printHelp.append(f"[t]: 임무 확인")
+    printHelp.append(f"[v]: 현재 상태 확인")
     printHelp.append(f"[h]: 도움말 확인")
     printHelp.append(f"[1/2]: 게임 저장하기/불러오기")
     printHelp.append(f"[q]: 게임 종료하기")
@@ -454,7 +399,7 @@ def check_task():
 # 임무 열기 : 임무 이름 출력 ## 진행현황 추가 예정
 def open_task():
     openTask = []
-    openTask.append("< 임무 >")
+    openTask.append("< 임무 >\n")
     for i, name in enumerate(char_stat["task"], 1):
         openTask.append(f"  {i}. {name}")
     return openTask
@@ -546,7 +491,7 @@ def check_load_empty(save_dir: str):
 
 # 게임 불러오기 : 파일 선택 후 각 요소 불러오기
 def load_game(save_dir, file_name):
-    global char_stat, location, location_idx, env_stat
+    global char_stat, location, location_idx, settings
     load_list = ["char_stat", "location", "location_idx", "difficulty"]
     with open(os.path.join(save_dir, file_name), "r") as save_file:
         for line in save_file:
@@ -621,17 +566,12 @@ if __name__ == "__main__":
 
         elif user_input == "b":
             if check_bag():
-                bag_output(
-                    open_bag(), "사용할 아이템의 숫자 혹은 이름을 입력하시오. (q: 닫기)"
-                )
+                bag_output(open_bag(), "사용할 아이템의 숫자 혹은 이름을 입력하시오. (q: 닫기)")
             else:
                 main_output("가방이 비어있습니다.", location_idx)
 
         elif user_input == "h":
-            help_output(
-                print_help(),
-                "조작법에 해당되는 키를 입력하여 게임을 진행하시오. (q: 닫기)",
-            )
+            help_output(print_help(), "조작법에 해당되는 키를 입력하여 게임을 진행하시오. (q: 닫기)")
 
         elif user_input == "1":
             main_output("저장할 파일 이름을 입력하시오.", location_idx)
@@ -642,9 +582,7 @@ if __name__ == "__main__":
             if check_load_empty("saves"):
                 main_output("저장된 파일이 없습니다.", location_idx)
             else:
-                load_output(
-                    "saves", "불러올 파일의 번호를 입력하시오. (0: 폴더 변경 | q: 종료)"
-                )
+                load_output("saves", "불러올 파일의 번호를 입력하시오. (0: 폴더 변경 | q: 종료)")
 
         else:
             message = move_char(user_input)
