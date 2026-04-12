@@ -266,6 +266,29 @@ def interaction_output(texts: list, message: str, location: str, width: int = 73
         else:
             message = "잘못된 입력입니다."
 
+
+# 임무 출력 : 현재 사용자의 임무 출력
+def task_output(texts: list, message: str, width: int = 73, height: int = 13):
+    while True:
+        print("=" * width)
+        print(f"[위치]: {location}")
+        print(f"[HP]: {char_stat['hp']}")
+        print("=" * width)
+        for text in texts:
+            print(text)
+        for _ in range(max(0, height - len(texts))):
+            print()
+        print("=" * width)
+        print(message)
+        print("=" * width)
+        user_input = input("> ")
+        if user_input == "q":
+            main_output("임무창을 닫았습니다.", location_idx)
+            break
+        else:
+            message = "잘못된 입력입니다."
+            
+
 # ---------------------- 초기설정 및 출력 리스트 함수 ----------------------#
 
 
@@ -412,6 +435,32 @@ def clean_inventory():
     char_stat["bag"] = {k: v for k, v in char_stat["bag"].items() if v != 0}
 
 
+# ---------------------------- 임무 함수 -----------------------------#
+
+
+# 임무 확인 : T/F 반환
+def check_task():
+    if char_stat["task"]:
+        return True
+    else:
+        return False
+
+
+# 임무 열기 : 임무 이름 출력 ## 진행현황 추가 예정
+def open_task():
+    openTask = []
+    openTask.append("< 임무 >")
+    for i, name in enumerate(char_stat["task"], 1):
+        openTask.append(f"  {i}. {name}")
+    return openTask
+
+
+# 임무 수락 : 독수리상에서 임무 수락
+def get_task():
+    return
+
+
+
 # -------------------------- 상호작용 함수 ---------------------------#
 
 # 상호작용 : 지점 도착 시 상호작용 실행
@@ -453,7 +502,7 @@ def show_shop(location: str):
 # --------------------- 게임 저장/불러오기 함수 ----------------------#
 
 
-# 게임 저장하기 : 폴더 생성 후 각 요소 추가하기 ++ 임무, 모든 입력
+# 게임 저장하기 : 폴더 생성 후 각 요소 추가하기 ++ 모든 입력
 def save_game():
     file_name = input("> ")
     os.makedirs("saves", exist_ok=True)
@@ -510,7 +559,7 @@ def load_game(save_dir, file_name):
 # ---------------------------- 변수 목록 -----------------------------#
 
 # 주인공 상태 -> 딕셔너리
-char_stat = {"hp": 10, "money": 50000, "bag": {}}
+char_stat = {"hp": 10, "money": 50000, "bag": {}, "task": {}}
 
 # 아이템 -> 딕셔너리 - [가격, 회복량]
 item_dict = {"두쫀쿠": [2500, 25], "카페라떼": [5000, 25]}
@@ -556,7 +605,10 @@ if __name__ == "__main__":
             check_interaction(location)
         
         elif user_input == "t":
-            continue
+            if check_task():
+                task_output(open_task(), "현재 사용자의 임무입니다. (q: 닫기)")
+            else:
+                main_output("현재 사용자의 임무가 없습니다.", location_idx)
 
         elif user_input == "v":
             status_output(print_status(), "현재 사용자의 상태입니다. (q: 닫기)")
