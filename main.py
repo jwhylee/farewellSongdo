@@ -237,7 +237,34 @@ def shop_output(texts: list, message: str, location: str, width: int = 73, heigh
         else:
             message = f"돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)"
 
-# 상호작용 출력
+
+# 상호작용 선택 출력 : 상호작용 선택 및 실행
+def interaction_output(texts: list, message: str, location: str, width: int = 73, height: int = 13):
+    while True:
+        print("=" * width)
+        print(f"[위치]: {location}")
+        print(f"[HP]: {char_stat['hp']}")
+        print("=" * width)
+        for text in texts:
+            print(text)
+        for _ in range(max(0, height - len(texts))):
+            print()
+        print("=" * width)
+        print(message)
+        print("=" * width)
+        user_input = input("> ")
+        
+        if user_input == "q":
+            main_output("상호작용을 종료합니다.", location_idx)
+            break
+        elif user_input.isdigit():
+            idx = int(user_input) - 1
+            if 0 <= idx < len(texts)-1:
+                return user_input
+            else:
+                message = "잘못된 입력입니다."
+        else:
+            message = "잘못된 입력입니다."
 
 # ---------------------- 초기설정 및 출력 리스트 함수 ----------------------#
 
@@ -261,6 +288,7 @@ def print_help():
     printHelp.append(f"[w/s/a/d]: 상하좌우로 이동")
     printHelp.append(f"[v]: 현재 상태 확인")
     printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
+    printHelp.append(f"[f]: 상호작용")
     printHelp.append(f"[h]: 도움말 확인")
     printHelp.append(f"[1/2]: 게임 저장하기/불러오기")
     printHelp.append(f"[q]: 게임 종료하기")
@@ -272,9 +300,7 @@ def print_setdifficulty():
     printSetdifficulty = []
     printSetdifficulty.append("")
     printSetdifficulty.append("< 난이도 설정 >")
-    printSetdifficulty.append(f"1. 쉬움")
-    printSetdifficulty.append(f"2. 보통")
-    printSetdifficulty.append(f"3. 어려움")
+    printSetdifficulty.append(f"1. 쉬움 | 2. 보통 | 3. 어려움")
     return printSetdifficulty
 
 
@@ -389,15 +415,27 @@ def clean_inventory():
 # -------------------------- 상호작용 함수 ---------------------------#
 
 # 상호작용 : 지점 도착 시 상호작용 실행
-def check_interaction(location: str):
+def check_interaction(location: str, task_num: int=0):
     if location not in interaction:
         main_output("이곳에서 상호작용할 수 없습니다.", location_idx)
-    elif len(interaction[location]) == 1:
-        interaction_type = interaction[location][0]
-        if interaction_type == "shop":
-            shop_output(show_shop(location), "사용할 아이템의 이름 또는 번호를 입력하세요.(q: 닫기)", location)
-    else:
-        print("fail")
+    elif len(interaction[location]) > 1:
+        task_num = interaction_output(show_interaction(location), "사용할 상호작용의 번호를 입력하세요.(q: 닫기)", location)
+        if task_num:
+            task_num = int(task_num) - 1
+        else:
+            return
+    interaction_type = interaction[location][task_num]
+    if interaction_type == "상점":
+        shop_output(show_shop(location), "사용할 아이템의 이름 또는 번호를 입력하세요.(q: 닫기)", location)
+
+
+# 한 장소에 대해 상호작용이 2개일 때 표시
+def show_interaction(location: str):
+    interaction_list = []
+    interaction_list.append("< 상호작용 목록 >")
+    for i, interaction_type in enumerate(interaction[location], 1):
+        interaction_list.append(f"{i}. {interaction_type}")
+    return interaction_list
 
 
 # 상호작용 : 아이템 구매하기 - idx 및 이름 기반 처리
@@ -410,6 +448,7 @@ def show_shop(location: str):
         price = item_dict[name][0]
         shop_list.append(f"  {i}. {name}  {price}원  (재고: {stock})")
     return shop_list
+
 
 # --------------------- 게임 저장/불러오기 함수 ----------------------#
 
@@ -477,7 +516,7 @@ char_stat = {"hp": 10, "money": 50000, "bag": {}}
 item_dict = {"두쫀쿠": [2500, 25], "카페라떼": [5000, 25]}
 
 # 상호작용 -> 딕셔너리 - [상호작용 종류]
-interaction = {"학생회관": ['shop']}
+interaction = {"학생회관": ['상점']}
 
 # 구매 상호작용 -> 딕셔너리 - {가격, 재고}
 ware_dict = {"학생회관": {"두쫀쿠": 50, "카페라떼": 100}}
@@ -515,6 +554,9 @@ if __name__ == "__main__":
 
         elif user_input == "f":
             check_interaction(location)
+        
+        elif user_input == "t":
+            continue
 
         elif user_input == "v":
             status_output(print_status(), "현재 사용자의 상태입니다. (q: 닫기)")
