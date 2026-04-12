@@ -329,15 +329,20 @@ def print_setdifficulty():
 
 # 상태 출력 리스트
 def print_status():
+    r, c = location_idx[0], location_idx[1]
+    east = schoolMap[r][c + 1] if c + 1 < len(schoolMap[r]) else None
+    west = schoolMap[r][c - 1] if c - 1 >= 0 else None
+    south = schoolMap[r - 1][c] if r - 1 >= 0 else None
+    north = schoolMap[r + 1][c] if r + 1 < len(schoolMap) else None
     printStat = []
     printStat.append("< 상태창 >")
     printStat.append(f"1. 소지금: {char_stat['money']}원")
     printStat.append(f"2. 체력:   {char_stat['hp']}")
     printStat.append(f"3. 위치: {location}")
-    printStat.append(f"4. 동쪽위치: {schoolMap[location_idx[0]][location_idx[1] + 1]}")
-    printStat.append(f"5. 서쪽위치: {schoolMap[location_idx[0]][location_idx[1] - 1]}")
-    printStat.append(f"6. 남쪽위치: {schoolMap[location_idx[0] - 1][location_idx[1]]}")
-    printStat.append(f"7. 북쪽위치: {schoolMap[location_idx[0] + 1][location_idx[1]]}")
+    printStat.append(f"4. 동쪽위치: {east}")
+    printStat.append(f"5. 서쪽위치: {west}")
+    printStat.append(f"6. 남쪽위치: {south}")
+    printStat.append(f"7. 북쪽위치: {north}")
     return printStat
 
 
@@ -466,7 +471,8 @@ def get_task():
 # 상호작용 : 지점 도착 시 상호작용 실행
 def check_interaction(location: str, task_num: int=0):
     if location not in interaction:
-        main_output("이곳에서 상호작용할 수 없습니다.", location_idx)
+        main_output("상호작용할 것이 없습니다.", location_idx)
+        return
     elif len(interaction[location]) > 1:
         task_num = interaction_output(show_interaction(location), "사용할 상호작용의 번호를 입력하세요.(q: 닫기)", location)
         if task_num:
