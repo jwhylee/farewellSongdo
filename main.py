@@ -1,43 +1,9 @@
-# ------------------ 모듈 ------------------#
+# ------------------------------- 모듈 -------------------------------#
 import os
 
 
-# ------------------ 초기설정 함수 ------------------#
+# ---------------------------- 출력 함수 -----------------------------#
 
-# 지도 생성 : 리스트 - 지도, 지도 좌표
-def create_map(col: int, location: list) -> list:
-    schoolMap = []
-    rMap = []
-    for idx, loc in enumerate(location):
-        rMap.append(loc)
-        if (idx + 1) % col == 0:
-            schoolMap.append(rMap)
-            rMap = []
-    return schoolMap
-
-# 도움말 출력 리스트
-def print_help():
-    printHelp = []
-    printHelp.append("< 게임 조작법 >")
-    printHelp.append(f"[w/s/a/d]: 상하좌우로 이동")
-    printHelp.append(f"[v]: 현재 상태 확인")
-    printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
-    printHelp.append(f"[h]: 도움말 확인")
-    printHelp.append(f"[1/2]: 게임 저장하기/불러오기")
-    printHelp.append(f"[q]: 게임 종료하기")
-    return printHelp
-
-# 난이도 설정 리스트
-def print_setdifficulty():
-    printSetdifficulty = []
-    printSetdifficulty.append("")
-    printSetdifficulty.append("< 난이도 설정 >")
-    printSetdifficulty.append(f"1. 쉬움")
-    printSetdifficulty.append(f"2. 보통")
-    printSetdifficulty.append(f"3. 어려움")
-    return printSetdifficulty
-    
-# ------------------ 출력 함수 ------------------#
 
 # 초기 출력 : 게임 설명 및 난이도 설정
 def initial_output(texts: list, message: str, width: int = 73, height: int = 13):
@@ -68,7 +34,7 @@ def initial_output(texts: list, message: str, width: int = 73, height: int = 13)
             prepGame = True
 
 
-# 도움말 출력 : 
+# 도움말 출력 :
 def help_output(texts: list, message: str, width: int = 73, height: int = 13):
     global game_start
     while True:
@@ -189,7 +155,7 @@ def load_output(save_dir: str, message: str, width: int = 73, height: int = 13):
         print("=" * width)
         print(message)
         print("=" * width)
-            
+
         if change_dir:
             save_dir = input("> ")
             if check_load_empty(save_dir):
@@ -204,13 +170,13 @@ def load_output(save_dir: str, message: str, width: int = 73, height: int = 13):
             continue
         else:
             user_input = input("> ")
-        
+
         if user_input == "q":
             main_output("불러오기를 종료합니다.", location_idx)
             break
         elif user_input == "0":
             change_dir = True
-            message="변경할 폴더를 입력하세요."
+            message = "변경할 폴더를 입력하세요."
         elif user_input.isdigit() and 1 <= int(user_input) <= len(dir_list):
             file_name = dir_list[int(user_input) - 1]
             message = load_game(save_dir, file_name)
@@ -220,10 +186,114 @@ def load_output(save_dir: str, message: str, width: int = 73, height: int = 13):
             message = "잘못된 입력입니다."
 
 
+# 상점 출력 : 상점 출력 및 아이템 구매
+def shop_output(texts: list, message: str, location: str, width: int = 73, height: int = 13):
+    while True:
+        print("=" * width)
+        print(f"[위치]: {location}")
+        print(f"[HP]: {char_stat['hp']}")
+        print("=" * width)
+        for text in texts:
+            print(text)
+        for _ in range(max(0, height - len(texts))):
+            print()
+        print("=" * width)
+        print(message)
+        print("=" * width)
+        user_input = input("> ")
+        
+        if user_input == "q":
+            main_output("상점 이용을 종료합니다.", location_idx)
+            break
+
+        name = None
+        shop = ware_dict[location]
+        items = list(shop.items())
+        if user_input.isdigit():
+            idx = int(user_input) - 1
+            if 0 <= idx < len(items):
+                name = items[idx][0]
+            else:
+                message = "잘못된 입력입니다."
+                continue
+        elif user_input in shop:
+            name = user_input
+        else:
+            message = "잘못된 입력입니다."
+            continue
+
+        price = item_dict[name][0]
+        if shop[name] <= 0:
+            message = "재고가 없습니다."
+        elif char_stat["money"] >= price:
+            char_stat["money"] -= price
+            shop[name] -= 1
+            if name in char_stat["bag"]:
+                char_stat["bag"][name] += 1
+            else:
+                char_stat["bag"][name] = 1
+            message = f"→ {name} 구매 완료 (잔액: {char_stat['money']}원)"
+            texts = show_shop(location)
+        else:
+            message = f"돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)"
+
 # 상호작용 출력
 
+# ---------------------- 초기설정 및 출력 리스트 함수 ----------------------#
 
-# ------------------ 이동 함수 ------------------#
+
+# 지도 생성 : 리스트 - 지도, 지도 좌표
+def create_map(col: int, location: list) -> list:
+    schoolMap = []
+    rMap = []
+    for idx, loc in enumerate(location):
+        rMap.append(loc)
+        if (idx + 1) % col == 0:
+            schoolMap.append(rMap)
+            rMap = []
+    return schoolMap
+
+
+# 도움말 출력 리스트
+def print_help():
+    printHelp = []
+    printHelp.append("< 게임 조작법 >")
+    printHelp.append(f"[w/s/a/d]: 상하좌우로 이동")
+    printHelp.append(f"[v]: 현재 상태 확인")
+    printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
+    printHelp.append(f"[h]: 도움말 확인")
+    printHelp.append(f"[1/2]: 게임 저장하기/불러오기")
+    printHelp.append(f"[q]: 게임 종료하기")
+    return printHelp
+
+
+# 난이도 출력 리스트
+def print_setdifficulty():
+    printSetdifficulty = []
+    printSetdifficulty.append("")
+    printSetdifficulty.append("< 난이도 설정 >")
+    printSetdifficulty.append(f"1. 쉬움")
+    printSetdifficulty.append(f"2. 보통")
+    printSetdifficulty.append(f"3. 어려움")
+    return printSetdifficulty
+
+
+# 상태 출력 리스트
+def print_status():
+    printStat = []
+    printStat.append("< 상태창 >")
+    printStat.append(f"1. 소지금: {char_stat['money']}원")
+    printStat.append(f"2. 체력:   {char_stat['hp']}")
+    printStat.append(f"3. 위치: {location}")
+    printStat.append(f"4. 동쪽위치: {schoolMap[location_idx[0]][location_idx[1] + 1]}")
+    printStat.append(f"5. 서쪽위치: {schoolMap[location_idx[0]][location_idx[1] - 1]}")
+    printStat.append(f"6. 남쪽위치: {schoolMap[location_idx[0] - 1][location_idx[1]]}")
+    printStat.append(f"7. 북쪽위치: {schoolMap[location_idx[0] + 1][location_idx[1]]}")
+    return printStat
+
+
+# ---------------------------- 이동 함수 -----------------------------#
+
 
 # 이동 : 입력이 유효한지 판단 후 이동 출력
 def move_char(loc_str: str):
@@ -265,23 +335,8 @@ def check_move(loc_idx: list, idx: int, num: int) -> bool:
     return validity
 
 
-# ------------------ 상태 함수 ------------------#
+# ---------------------------- 가방 함수 -----------------------------#
 
-# 상태 출력 리스트
-def print_status():
-    printStat = []
-    printStat.append("< 상태창 >")
-    printStat.append(f"1. 소지금: {char_stat['money']}원")
-    printStat.append(f"2. 체력:   {char_stat['hp']}")
-    printStat.append(f"3. 위치: {location}")
-    printStat.append(f"4. 동쪽위치: {schoolMap[location_idx[0]][location_idx[1] + 1]}")
-    printStat.append(f"5. 서쪽위치: {schoolMap[location_idx[0]][location_idx[1] - 1]}")
-    printStat.append(f"6. 남쪽위치: {schoolMap[location_idx[0] - 1][location_idx[1]]}")
-    printStat.append(f"7. 북쪽위치: {schoolMap[location_idx[0] + 1][location_idx[1]]}")
-    return printStat
-
-
-# ------------------ 가방 함수 ------------------#
 
 # 가방 확인 : T/F 반환
 def check_bag():
@@ -331,64 +386,33 @@ def clean_inventory():
     char_stat["bag"] = {k: v for k, v in char_stat["bag"].items() if v != 0}
 
 
-# ------------------ 상호작용 함수 ------------------#
+# -------------------------- 상호작용 함수 ---------------------------#
 
 # 상호작용 : 지점 도착 시 상호작용 실행
-def do_interaction(location: str):
-    if location in interaction:
-        print(f"\n  ★ {location}에 상점이 있습니다.")
-        a = input("  상점에 들어가시겠습니까? [y/n]: ")
-        print()
-        if a == "y":
-            buy_item(location)
+def check_interaction(location: str):
+    if location not in interaction:
+        main_output("이곳에서 상호작용할 수 없습니다.", location_idx)
+    elif len(interaction[location]) == 1:
+        interaction_type = interaction[location][0]
+        if interaction_type == "shop":
+            shop_output(show_shop(location), "사용할 아이템의 이름 또는 번호를 입력하세요.(q: 닫기)", location)
+    else:
+        print("fail")
 
 
 # 상호작용 : 아이템 구매하기 - idx 및 이름 기반 처리
-def buy_item(location: str):
-    while True:
-        shop = interaction[location]
-        items = list(shop.items())
-        print(f"[ {location} 상점 ] - 소지금 {char_stat['money']}원\n")
-        for i, (name, stock) in enumerate(items, 1):
-            price = item_dict[name][0]
-            print(f"  {i}. {name}  {price}원  (재고: {stock})")
-        buy_input = input("구매할 아이템 번호 입력 (q: 닫기): ")
-
-        if buy_input == "q":
-            break
-
-        name = None
-        if buy_input.isdigit():
-            idx = int(buy_input) - 1
-            if 0 <= idx < len(items):
-                name = items[idx][0]
-            else:
-                print("  없는 번호입니다.")
-                continue
-        elif buy_input in shop:
-            name = buy_input
-        else:
-            print("  없는 아이템입니다.")
-            continue
-
+def show_shop(location: str):
+    shop_list = []
+    shop = ware_dict[location]
+    items = list(shop.items())
+    shop_list.append(f"[ {location} 상점 ] - 소지금 {char_stat['money']}원\n")
+    for i, (name, stock) in enumerate(items, 1):
         price = item_dict[name][0]
-        if shop[name] <= 0:
-            print("  재고가 없습니다.")
-        elif char_stat["money"] >= price:
-            char_stat["money"] -= price
-            shop[name] -= 1
-            if name in char_stat["bag"]:
-                char_stat["bag"][name] += 1
-            else:
-                char_stat["bag"][name] = 1
-            print(f"\n  → {name} 구매 완료 (잔액: {char_stat['money']}원)")
-        else:
-            print(
-                f"\n  돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)"
-            )
+        shop_list.append(f"  {i}. {name}  {price}원  (재고: {stock})")
+    return shop_list
 
+# --------------------- 게임 저장/불러오기 함수 ----------------------#
 
-# ------------------ 게임 저장/불러오기 함수 ------------------#
 
 # 게임 저장하기 : 폴더 생성 후 각 요소 추가하기 ++ 임무, 모든 입력
 def save_game():
@@ -404,7 +428,9 @@ def save_game():
 
 # 게임 불러오기 : 폴더에서 파일 선택 후 각 요소 불러오기 - 폴더 변경 가능
 def load_game_list(save_dir: str):
-    file_list = [f for f in os.listdir(save_dir) if not f.startswith('.') and f.endswith('.txt')]
+    file_list = [
+        f for f in os.listdir(save_dir) if not f.startswith(".") and f.endswith(".txt")
+    ]
     load_list = []
     load_list.append("< 저장된 파일 목록 >")
     for i, file in enumerate(file_list):
@@ -416,7 +442,9 @@ def load_game_list(save_dir: str):
 def check_load_empty(save_dir: str):
     if not os.path.isdir(save_dir):
         return True
-    file_list = [f for f in os.listdir(save_dir) if not f.startswith('.') and f.endswith('.txt')]
+    file_list = [
+        f for f in os.listdir(save_dir) if not f.startswith(".") and f.endswith(".txt")
+    ]
     if len(file_list) == 0:
         return True
     return False
@@ -440,7 +468,7 @@ def load_game(save_dir, file_name):
     return f"{os.path.basename(file_name)}을 불러왔습니다."
 
 
-# ------------------ 변수 목록 ------------------#
+# ---------------------------- 변수 목록 -----------------------------#
 
 # 주인공 상태 -> 딕셔너리
 char_stat = {"hp": 10, "money": 50000, "bag": {}}
@@ -448,8 +476,11 @@ char_stat = {"hp": 10, "money": 50000, "bag": {}}
 # 아이템 -> 딕셔너리 - [가격, 회복량]
 item_dict = {"두쫀쿠": [2500, 25], "카페라떼": [5000, 25]}
 
-# 상호작용 -> 딕셔너리 - [가격, 재고]
-interaction = {"학생회관": {"두쫀쿠": 50, "카페라떼": 100}}
+# 상호작용 -> 딕셔너리 - [상호작용 종류]
+interaction = {"학생회관": ['shop']}
+
+# 구매 상호작용 -> 딕셔너리 - {가격, 재고}
+ware_dict = {"학생회관": {"두쫀쿠": 50, "카페라떼": 100}}
 
 # 위치 -> 리스트 - [x, y]
 location = "연대앞 버스정류장"
@@ -473,7 +504,7 @@ schoolMap = create_map(6, school_locations)
 settings = {"difficulty": "보통"}
 
 
-# ------------------ 메인 함수 ------------------#
+# ---------------------------- 메인 함수 -----------------------------#
 if __name__ == "__main__":
     initial_output(print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다.")
     main_output("송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.", location_idx)
@@ -482,23 +513,28 @@ if __name__ == "__main__":
         if user_input == "q":
             break
 
+        elif user_input == "f":
+            check_interaction(location)
+
         elif user_input == "v":
-            status_output(print_status(), "현재 사용자의 상태입니다(q: 닫기)")
+            status_output(print_status(), "현재 사용자의 상태입니다. (q: 닫기)")
 
         elif user_input == "b":
             if check_bag():
                 bag_output(
-                    open_bag(),
-                    "사용할 아이템의 숫자 혹은 이름을 입력하시오(q: 닫기)",
+                    open_bag(), "사용할 아이템의 숫자 혹은 이름을 입력하시오. (q: 닫기)"
                 )
             else:
                 main_output("가방이 비어있습니다.", location_idx)
 
         elif user_input == "h":
-            help_output(print_help(), "조작법에 해당되는 키를 입력하여 게임을 진행하시오. (q: 닫기)")
+            help_output(
+                print_help(),
+                "조작법에 해당되는 키를 입력하여 게임을 진행하시오. (q: 닫기)",
+            )
 
         elif user_input == "1":
-            main_output("저장할 파일 이름을 입력하세요: ", location_idx)
+            main_output("저장할 파일 이름을 입력하시오.", location_idx)
             message = save_game()
             main_output(message, location_idx)
 
@@ -506,7 +542,9 @@ if __name__ == "__main__":
             if check_load_empty("saves"):
                 main_output("저장된 파일이 없습니다.", location_idx)
             else:
-                load_output("saves", "불러올 파일의 번호를 입력하세요(0: 폴더 변경 | q: 종료)")
+                load_output(
+                    "saves", "불러올 파일의 번호를 입력하시오. (0: 폴더 변경 | q: 종료)"
+                )
 
         else:
             message = move_char(user_input)
