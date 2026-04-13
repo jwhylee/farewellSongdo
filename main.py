@@ -2,22 +2,16 @@
 import os
 
 
+# ------------------------------- 객체 -------------------------------#
+class Place:
+    def __init__(self, name: str, buy: bool, sell: bool, interaction: bool):
+        self.name = name
+        self.buy = buy
+        self.sell = sell
+        self.interaction = interaction
+
+
 # ---------------------------- 출력 함수 -----------------------------#
-
-
-# 공통 출력
-def common_output(texts: list, message: str, width: int = 73, height: int = 13):
-    print("=" * width)
-    print(f"[위치]: {location}")
-    print(f"[HP]: {char_stat['hp']}")
-    print("=" * width)
-    for text in texts:
-        print(text)
-    for _ in range(max(0, height - len(texts))):
-        print()
-    print("=" * width)
-    print(message)
-    print("=" * width)
 
 
 # 초기 출력 : 게임 설명 및 난이도 설정
@@ -47,6 +41,21 @@ def initial_output(texts: list, message: str, width: int = 73, height: int = 13)
         else:
             message = "잘못된 입력입니다"
             prepGame = True
+
+
+# 범용 출력 : 특수 출력에 사용되는 공통 출력 양식
+def common_output(texts: list, message: str, width: int = 73, height: int = 13):
+    print("=" * width)
+    print(f"[위치]: {location}")
+    print(f"[HP]: {char_stat['hp']}")
+    print("=" * width)
+    for text in texts:
+        print(text)
+    for _ in range(max(0, height - len(texts))):
+        print()
+    print("=" * width)
+    print(message)
+    print("=" * width)
 
 
 # 기본 출력 : 게임의 기본 화면
@@ -165,7 +174,7 @@ def shop_output(texts: list, message: str, location: str):
     while True:
         common_output(texts, message)
         user_input = input("> ")
-        
+
         if user_input == "q":
             main_output("상점 이용을 종료합니다.", location_idx)
             break
@@ -199,7 +208,9 @@ def shop_output(texts: list, message: str, location: str):
             message = f"→ {name} 구매 완료 (잔액: {char_stat['money']}원)"
             texts = show_shop(location)
         else:
-            message = f"돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)"
+            message = (
+                f"돈이 부족합니다. (필요: {price}원, 보유: {char_stat['money']}원)"
+            )
 
 
 # 상호작용 선택 출력 : 상호작용 선택 및 실행
@@ -207,13 +218,13 @@ def interaction_output(texts: list, message: str, location: str):
     while True:
         common_output(texts, message)
         user_input = input("> ")
-        
+
         if user_input == "q":
             main_output("상호작용을 종료합니다.", location_idx)
             break
         elif user_input.isdigit():
             idx = int(user_input) - 1
-            if 0 <= idx < len(texts)-1:
+            if 0 <= idx < len(texts) - 1:
                 return user_input
             else:
                 message = "잘못된 입력입니다."
@@ -231,7 +242,7 @@ def task_output(texts: list, message: str):
             break
         else:
             message = "잘못된 입력입니다."
-            
+
 
 # ---------------------- 초기설정 및 출력 리스트 함수 ----------------------#
 
@@ -309,11 +320,19 @@ def move_char(loc_str: str):
     idx, num = directions[loc_str]
 
     if check_move(location_idx, idx, num):
-        char_stat["hp"] -= 1
+        if settings["difficulty"] == "쉬움":
+            fatigue = 0.5
+        elif settings["difficulty"] == "보통":
+            fatigue = 1
+        elif settings["difficulty"] == "어려움":
+            fatigue = 2
+        char_stat["hp"] -= fatigue
+
         global location
         location_idx[idx] += num
         location = schoolMap[location_idx[0]][location_idx[1]]
-        return f"{location}(으)로 이동했습니다."
+        message = f"{location}(으)로 이동했습니다. {show_interaction(location)}"
+        return message
     else:
         return "막힌 방향입니다."
 
@@ -410,32 +429,45 @@ def get_task():
     return
 
 
-
 # -------------------------- 상호작용 함수 ---------------------------#
 
+
 # 상호작용 : 지점 도착 시 상호작용 실행
-def check_interaction(location: str, task_num: int=0):
+def check_interaction(location: str, task_num: int = 0):
     if location not in interaction:
         main_output("상호작용할 것이 없습니다.", location_idx)
         return
     elif len(interaction[location]) > 1:
-        task_num = interaction_output(show_interaction(location), "사용할 상호작용의 번호를 입력하세요.(q: 닫기)", location)
+        task_num = interaction_output(
+            show_interaction(location),
+            "사용할 상호작용의 번호를 입력하세요.(q: 닫기)",
+            location,
+        )
         if task_num:
             task_num = int(task_num) - 1
         else:
             return
     interaction_type = interaction[location][task_num]
     if interaction_type == "상점":
-        shop_output(show_shop(location), "사용할 아이템의 이름 또는 번호를 입력하세요.(q: 닫기)", location)
+        shop_output(
+            show_shop(location),
+            "사용할 아이템의 이름 또는 번호를 입력하세요.(q: 닫기)",
+            location,
+        )
 
 
-# 한 장소에 대해 상호작용이 2개일 때 표시
+# 이동 후 상호작용 가능 장소 도착 시 표시
 def show_interaction(location: str):
-    interaction_list = []
-    interaction_list.append("< 상호작용 목록 >")
-    for i, interaction_type in enumerate(interaction[location], 1):
-        interaction_list.append(f"{i}. {interaction_type}")
-    return interaction_list
+    if location not in interaction:
+        return ""
+    else:
+        interaction_list = []
+        for interaction_type in interaction[location]:
+            interaction_list.append(f"{interaction_type}")
+        interaction_str = "| ".join(interaction_list)
+        interaction_str = interaction_str.strip()
+        interaction_str = "[" + interaction_str + "]"
+        return interaction_str
 
 
 # 상호작용 : 아이템 구매하기 - idx 및 이름 기반 처리
@@ -510,13 +542,13 @@ def load_game(save_dir, file_name):
 # ---------------------------- 변수 목록 -----------------------------#
 
 # 주인공 상태 -> 딕셔너리
-char_stat = {"hp": 10, "money": 50000, "bag": {}, "task": {}}
+char_stat = {"hp": 10, "money": 10000, "bag": {}, "task": {"시험"}}
 
 # 아이템 -> 딕셔너리 - [가격, 회복량]
 item_dict = {"두쫀쿠": [2500, 25], "카페라떼": [5000, 25]}
 
 # 상호작용 -> 딕셔너리 - [상호작용 종류]
-interaction = {"학생회관": ['상점']}
+interaction = {"학생회관": ["구매", "임무"]}
 
 # 구매 상호작용 -> 딕셔너리 - {가격, 재고}
 ware_dict = {"학생회관": {"두쫀쿠": 50, "카페라떼": 100}}
@@ -527,13 +559,48 @@ location_idx = [0, 0]
 
 # 학교 위치 -> 연대앞 버스정류장 ~ 이윤재관
 school_locations = [
-    "연대앞 버스정류장", "정문", "스타벅스", "세브란스병원 버스정류장", None, None, 
-    "공학원","백양로1", "공터1", "암병원", "의과대학", None, 
-    "공학관","백양로2", "백주년기념관", "안과병원", "제중관", None, 
-    "체육관","백양로3", "공터2", "광혜원", "어린이병원", "세브란스병원", 
-    "중앙도서관","독수리상", "학생회관", "루스채플", "재활병원", "치과대학", 
-    "백양관","백양로5", "대강당", "음악관", "알렌관", "ABMRC", 
-    None, None, None, None, "새천년관", "이윤재관",
+    "연대앞 버스정류장",
+    "정문",
+    "스타벅스",
+    "세브란스병원 버스정류장",
+    None,
+    None,
+    "공학원",
+    "백양로1",
+    "공터1",
+    "암병원",
+    "의과대학",
+    None,
+    "공학관",
+    "백양로2",
+    "백주년기념관",
+    "안과병원",
+    "제중관",
+    None,
+    "체육관",
+    "백양로3",
+    "공터2",
+    "광혜원",
+    "어린이병원",
+    "세브란스병원",
+    "중앙도서관",
+    "독수리상",
+    "학생회관",
+    "루스채플",
+    "재활병원",
+    "치과대학",
+    "백양관",
+    "백양로5",
+    "대강당",
+    "음악관",
+    "알렌관",
+    "ABMRC",
+    "종합관",
+    "본관",
+    "경영관",
+    "노천극장",
+    "새천년관",
+    "이윤재관",
 ]
 
 # 함수 생성 -> 학교 지도 및 좌표 - n개의 열을 가지는 지도 생성
@@ -545,8 +612,12 @@ settings = {"difficulty": "보통"}
 
 # ---------------------------- 메인 함수 -----------------------------#
 if __name__ == "__main__":
-    initial_output(print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다.")
-    main_output("송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.", location_idx)
+    initial_output(
+        print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다."
+    )
+    main_output(
+        "송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.", location_idx
+    )
     while True:
         user_input = input("> ")
         if user_input == "q":
@@ -554,7 +625,7 @@ if __name__ == "__main__":
 
         elif user_input == "f":
             check_interaction(location)
-        
+
         elif user_input == "t":
             if check_task():
                 task_output(open_task(), "현재 사용자의 임무입니다. (q: 닫기)")
@@ -566,12 +637,17 @@ if __name__ == "__main__":
 
         elif user_input == "b":
             if check_bag():
-                bag_output(open_bag(), "사용할 아이템의 숫자 혹은 이름을 입력하시오. (q: 닫기)")
+                bag_output(
+                    open_bag(), "사용할 아이템의 숫자 혹은 이름을 입력하시오. (q: 닫기)"
+                )
             else:
                 main_output("가방이 비어있습니다.", location_idx)
 
         elif user_input == "h":
-            help_output(print_help(), "조작법에 해당되는 키를 입력하여 게임을 진행하시오. (q: 닫기)")
+            help_output(
+                print_help(),
+                "조작법에 해당되는 키를 입력하여 게임을 진행하시오. (q: 닫기)",
+            )
 
         elif user_input == "1":
             main_output("저장할 파일 이름을 입력하시오.", location_idx)
@@ -582,7 +658,9 @@ if __name__ == "__main__":
             if check_load_empty("saves"):
                 main_output("저장된 파일이 없습니다.", location_idx)
             else:
-                load_output("saves", "불러올 파일의 번호를 입력하시오. (0: 폴더 변경 | q: 종료)")
+                load_output(
+                    "saves", "불러올 파일의 번호를 입력하시오. (0: 폴더 변경 | q: 종료)"
+                )
 
         else:
             message = move_char(user_input)
