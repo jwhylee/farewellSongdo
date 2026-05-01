@@ -1,18 +1,152 @@
 # ------------------------------- 모듈 -------------------------------#
 import os
-
+import pickle
 
 # ------------------------------- 객체 -------------------------------#
-class Place:
-    def __init__(self, name: str, buy: bool, sell: bool, interaction: bool):
+
+# 아이템 객체: 이름 / HP 회복량
+class Item:
+    def __init__(self, name: str, recovery: int):
         self.name = name
-        self.buy = buy
-        self.sell = sell
-        self.interaction = interaction
+        self.recovery = recovery
+
+# 임무 객체: 임무 이름 / 설명 / 수령 여부 / 완료 여부
+class Quest:
+    def __init__(self, name: str, description: str):
+        self.name = name
+        self.description = description
+        self.received = False 
+        self.cleared = False   
+
+# 장소 객체: 구매 / 판매 / 정보 / 임무 여부 / 정답 여부
+class Place:
+    def __init__(self, name: str, buy_menu: dict = {}, sell_menu: dict = {}, 
+                info: str = "", quest_give: "Quest" = None, quest_solve: "Quest" = None, 
+                answer: str = "", is_finish: bool = False):
+        self.name = name
+        self.buy_menu = buy_menu if buy_menu else {}
+        self.sell_menu = sell_menu if sell_menu else {}
+        self.info = info
+        self.quest_give = quest_give
+        self.quest_solve = quest_solve
+        self.answer = answer
+        self.is_finish = is_finish
+
+    # 해당 장소의 상호작용 목록 확인
+    def interactions(self) -> list:
+        labels = []
+        if self.buy_menu:
+            labels.append("구매")
+        if self.sell_menu:
+            labels.append("판매")
+        if self.quest_give or self.quest_solve or self.is_finish:
+            labels.append("임무")
+        return labels
+
+    # 구매 가능 여부 확인
+    def can_buy(self) -> bool:
+        return bool(self.buy_menu)
+
+    # 판매 가능 여부 확인
+    def can_sell(self) -> bool:
+        return bool(self.sell_menu)
+
+    # 임무 존재 여부 확인
+    def has_quest(self) -> bool:
+        return self.quest_give is not None or self.quest_solve is not None
+
+# 플레이어 객체: 체력 / 잔액 / 위치 / 가방 / 임무 - 이동 기능 포함
+class Player:
+    def __init__(self, hp: int, money: int, location: str, location_idx: list, 
+                 bag: dict = {}, tasks: list = []):
+        self.hp = hp
+        self.money = money
+        self.location = location
+        self.location_idx = list(location_idx)
+        self.bag = bag
+        self.tasks = tasks
+
+    # 가방 아이템 존재 여부 확인: check_bag에 전달
+    def has_bag_items(self) -> bool:
+        return bool(self.bag)
+
+    # 가방에서 아이템 제거: sell_item에서 사용
+    def clean_bag(self):
+        self.bag = {k: v for k, v in self.bag.items() if v > 0}
+
+    # 임무 진행 여부 확인: check_task에 전달
+    def has_task(self) -> bool:
+        return any(q.received and not q.cleared for q in self.tasks)
+
+    # 임무 수령: quest_output에서 사용
+    def add_task(self, quest: "Quest"):
+        if quest not in self.tasks:
+            self.tasks.append(quest)
+        quest.received = True
+
+    # 이동 기능: check_move 함수로 이동 가능 여부를 확인 후 이동 및 반영
+    def move(self, direction: str, school_map: list, difficulty: str) -> str:
+        directions = {"북": (0, 1), "남": (0, -1), "동": (1, 1), "서": (1, -1),}
+        fatigue = {"쉬움": 0.5, "보통": 1, "어려움": 2}
+        
+        if direction not in directions:
+            return "잘못된 입력입니다."
+
+        idx, num = directions[direction]
+        if not self.check_move(school_map, idx, num):
+            return "그 방향은 막혔어."
+
+        self.hp -= fatigue.get(difficulty, 1)
+        self.location_idx[idx] += num
+        self.location = school_map[self.location_idx[0]][self.location_idx[1]]
+        return f"{self.location}(으)로 이동했습니다."
+
+    # 이동 가능 여부 확인 함수: move 함수에 전달
+    def check_move(self, school_map: list, axis_idx: int, delta: int) -> bool:
+        after = self.location_idx.copy()
+        after[axis_idx] += delta
+        if after[0] < 0 or after[1] < 0:
+            return False
+        try:
+            cell = school_map[after[0]][after[1]]
+        except IndexError:
+            return False
+        return cell is not None
+
+    # 상태 출력: 
+    def print_status(self, school_map: list, ui_mode: str) -> list:
+        # 위치가 None일 때 막힘 출력
+        def adjust_dirstr(v):
+            return v if v is not None else "막힘"
+
+        r, c = self.location_idx[0], self.location_idx[1]
+        east = school_map[r][c + 1] if c + 1 < len(school_map[r]) else None
+        west = school_map[r][c - 1] if c - 1 >= 0 else None
+        south = school_map[r - 1][c] if r - 1 >= 0 else None
+        north = school_map[r + 1][c] if r + 1 < len(school_map) else None
+
+        if ui_mode == "minimal":
+            return [
+                f"계좌의 잔액 = {self.money:,}원",
+                f"HP = {self.hp}",
+                f"현재위치 = {self.location}",
+                f"동서남북 = {adjust_dirstr(east)}, {adjust_dirstr(west)}, {adjust_dirstr(south)}, {adjust_dirstr(north)}",
+            ]
+        
+        else:
+            return [
+                "< 상태창 >",
+                f"1. 소지금: {self.money}원",
+                f"2. 체력:   {self.hp}",
+                f"3. 위치: {self.location}",
+                f"4. 동쪽위치: {adjust_dirstr(east)}",
+                f"5. 서쪽위치: {adjust_dirstr(west)}",
+                f"6. 남쪽위치: {adjust_dirstr(south)}",
+                f"7. 북쪽위치: {adjust_dirstr(north)}",
+            ]
 
 
 # ---------------------------- 출력 함수 -----------------------------#
-
 
 # 초기 출력 : 게임 설명 및 난이도 설정
 def initial_output(texts: list, message: str, width: int = 73, height: int = 13):
@@ -264,13 +398,14 @@ def print_help():
     printHelp = []
     printHelp.append("< 게임 조작법 >")
     printHelp.append(f"[w/s/a/d]: 상하좌우로 이동")
-    printHelp.append(f"[f]: 상호작용")
+    printHelp.append(f"[p]: 현재 장소의 구매창 열기")
+    printHelp.append(f"[o]: 현재 장소의 판매창 열기")
+    printHelp.append(f"[f]: 임무 상호작용하기")
     printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
     printHelp.append(f"[t]: 임무 확인")
     printHelp.append(f"[v]: 현재 상태 확인")
     printHelp.append(f"[h]: 도움말 확인")
     printHelp.append(f"[1/2]: 게임 저장하기/불러오기")
-    printHelp.append(f"[q]: 게임 종료하기")
     return printHelp
 
 
@@ -541,90 +676,101 @@ def load_game(save_dir, file_name):
 
 # ---------------------------- 변수 목록 -----------------------------#
 
-# 주인공 상태 -> 딕셔너리
-char_stat = {"hp": 10, "money": 10000, "bag": {}, "task": {"시험"}}
-
-# 아이템 -> 딕셔너리 - [가격, 회복량]
-item_dict = {"두쫀쿠": [2500, 25], "카페라떼": [5000, 25]}
-
-# 상호작용 -> 딕셔너리 - [상호작용 종류]
-interaction = {"학생회관": ["구매", "임무"]}
-
-# 구매 상호작용 -> 딕셔너리 - {가격, 재고}
-ware_dict = {"학생회관": {"두쫀쿠": 50, "카페라떼": 100}}
-
-# 위치 -> 리스트 - [x, y]
-location = "연대앞 버스정류장"
-location_idx = [0, 0]
-
-# 학교 위치 -> 연대앞 버스정류장 ~ 이윤재관
 school_locations = [
-    "연대앞 버스정류장",
-    "정문",
-    "스타벅스",
-    "세브란스병원 버스정류장",
-    None,
-    None,
-    "공학원",
-    "백양로1",
-    "공터1",
-    "암병원",
-    "의과대학",
-    None,
-    "공학관",
-    "백양로2",
-    "백주년기념관",
-    "안과병원",
-    "제중관",
-    None,
-    "체육관",
-    "백양로3",
-    "공터2",
-    "광혜원",
-    "어린이병원",
-    "세브란스병원",
-    "중앙도서관",
-    "독수리상",
-    "학생회관",
-    "루스채플",
-    "재활병원",
-    "치과대학",
-    "백양관",
-    "백양로5",
-    "대강당",
-    "음악관",
-    "알렌관",
-    "ABMRC",
-    "종합관",
-    "본관",
-    "경영관",
-    "노천극장",
-    "새천년관",
-    "이윤재관",
+    "연대앞 버스정류장", "정문", "스타벅스", "세브란스병원 버스정류장", None, None,
+    "공학원", "백양로1", "공터1", "암병원", "의과대학", None,
+    "공학관", "백양로2", "백주년기념관", "안과병원", "제중관", None,
+    "체육관", "백양로3", "공터2", "광혜원", "어린이병원", "세브란스병원",
+    "중앙도서관", "독수리상", "학생회관", "루스채플", "재활병원", "치과대학",
+    "백양관", "백양로5", "대강당", "음악관", "알렌관", "ABMRC",
+    "종합관", "본관", "경영관", "노천극장", "새천년관", "이윤재관",
 ]
 
-# 함수 생성 -> 학교 지도 및 좌표 - n개의 열을 가지는 지도 생성
 schoolMap = create_map(6, school_locations)
 
-# 설정 -> 딕셔너리 - 난이도
-settings = {"difficulty": "보통"}
+settings = {"difficulty": "보통", "ui_mode": "full"}
+
+
+items = {
+    "두쫀쿠": Item("두쫀쿠", recovery=10),
+    "카페라떼": Item("카페라떼", recovery=5),
+}
+
+quests = {
+    "정문안내": Quest(
+        name="정문안내",
+        description=(
+            "학교에서 어떤 일들이 일어나고있는지 "
+            "소식들이 모이는 독수리상에서 알아보자."
+        ),
+    ),
+    "교내 부조리 수사": Quest(
+        name="교내 부조리 수사",
+        description=(
+            "교내 어딘가에서 부조리가 일어나고있다. "
+            "이동하고 상호작용을 해서 부조리를 찾아서 본관에 보고하라."
+        ),
+    ),
+    "교내 위생사건 수사": Quest(
+        name="교내 위생사건 수사",
+        description=(
+            "학생들이 단체로 식중독에 걸렸다. "
+            "이동하고 상호작용을 해서 위생사건의 원인을 찾아서 세브란스에 보고하라."
+        ),
+    ),
+}
+
+
+places = {}
+for loc_name in school_locations:
+    if loc_name is None:
+        continue
+    places[loc_name] = Place(loc_name)
+
+buy_group = [
+    (["학생회관"], {"두쫀쿠": 5000, "카페라떼": 3000}),
+    (["스타벅스", "ABMRC"], {"두쫀쿠": 4000, "카페라떼": 2000}),
+]
+for names, prices in buy_group:
+    for name in names:
+        places[name].buy_menu = {items[item_name]: price for item_name, price in prices.items()}
+
+sell_group = [
+    (
+        ["체육관", "공학관", "공학원", "재활병원", "어린이병원", "종합관", "노천극장"],
+        {"두쫀쿠": 7000, "카페라떼": 4000},
+    ),
+    (
+        [
+            "중앙도서관", "백양관", "대강당", "백주년기념관",
+            "안과병원", "암병원", "새천년관", "알렌관",
+            "제중관", "의과대학", "치과대학", "세브란스병원",
+            "본관", "경영관",
+        ],
+        {"두쫀쿠": 6000, "카페라떼": 3000},
+    ),
+]
+for names, prices in sell_group:
+    for name in names:
+        places[name].sell_menu = {items[item_name]: price for item_name, price in prices.items()}
+
+places["정문"].quest_give = quests["정문안내"]
+places["독수리상"].quest_give = quests["교내 부조리 수사"]
+places["본관"].quest_solve = quests["교내 부조리 수사"]
+places["세브란스병원"].quest_solve = quests["교내 위생사건 수사"]
+places["이윤재관"].is_finish = True
+
+player = Player(hp=10, money=10000, location="연대앞 버스정류장", location_idx=[0, 0])
 
 
 # ---------------------------- 메인 함수 -----------------------------#
 if __name__ == "__main__":
-    initial_output(
-        print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다."
-    )
-    main_output(
-        "송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.", location_idx
-    )
+    initial_output(print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다.")
+    main_output("송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.", location_idx)
     while True:
         user_input = input("> ")
-        if user_input == "q":
+        if user_input == "q": # 추후 삭제 예정
             break
-
-        elif user_input == "f":
-            check_interaction(location)
 
         elif user_input == "t":
             if check_task():
