@@ -87,7 +87,7 @@ class Player:
     # 이동 기능: check_move 함수로 이동 가능 여부를 확인 후 이동 및 반영
     def move(self, direction: str, school_map: list, difficulty: str) -> str:
         directions = {"북": (0, 1), "남": (0, -1), "동": (1, 1), "서": (1, -1),}
-        fatigue = {"쉬움": 0.5, "보통": 1, "어려움": 2}
+        fatigue = {"보통": 1, "어려움": 2}
         
         if direction not in directions:
             return "잘못된 입력입니다."
@@ -145,43 +145,122 @@ class Player:
                 f"7. 북쪽위치: {adjust_dirstr(north)}",
             ]
 
+# ------------------------- I/O 로깅 / 카운터 -------------------------#
+io_counter = 0
+input_log = []
 
-# ---------------------------- 출력 함수 -----------------------------#
+# 텍스트 출력 함수: minimal일 때 [N] 추가
+def output_text(text: str = ""):
+    global io_counter
+    io_counter += 1
+    if settings.get("ui_mode") == "minimal":
+        lines = text.split("\n") if text else [""]
+        print(f"[{io_counter}] {lines[0]}")
+        for line in lines[1:]:
+            print(line)
+    else:
+        print(text)
+
+
+# 리스트를 받아 이를 텍스트 출력 함수로 보내는 기능
+def output_text_block(texts: list):
+    cleaned = [t for t in texts if t not in ("", None)]
+    output_text("\n".join(cleaned))
+
+
+# 텍스트 입력 함수: minimal일 때 [N] 추가
+def input_text(prompt: str = "> ") -> str:
+    global io_counter
+    io_counter += 1
+    if settings.get("ui_mode") == "minimal":
+        user_input = input(f"[{io_counter}] {prompt}")
+    else:
+        user_input = input(prompt)
+    input_log.append(user_input)
+    return user_input
+
+
+# -------------------------- UI 분리함수  --------------------------#
+
+# 기본 화면 출력
+def render_main(message: str):
+    if settings.get("ui_mode") == "full":
+        main_output(message)
+    else:
+        output_text(message)
+
+
+# 특수 화면 출력(가방, 상태출력, 임무 등)
+def render_panel(texts: list, message: str):
+    if settings.get("ui_mode") == "full":
+        common_output(texts, message)
+    else:
+        block = texts
+        block.append(message)
+        output_text_block(block)
+
+
+# ---------------------------- 기초 출력 -----------------------------#
+
+# 초기 출력 : UI 모드 선택 → 게임 설명 및 난이도 설정
+def select_ui_mode():
+    while True:
+        output_text(
+            "보조 인터페이스를 사용하시겠습니까?\n"
+            "1) 사용 O - 박스, 지도 그림, 상태 패널 등을 화면에 표시\n"
+            "2) 사용 X - 텍스트만 [번호] 와 함께 표시"
+        )
+        choice = input_text()
+        if choice == "1":
+            settings["ui_mode"] = "full"
+            return
+        elif choice == "2":
+            settings["ui_mode"] = "minimal"
+            return
+        else:
+            output_text("잘못된 입력입니다.")
+
 
 # 초기 출력 : 게임 설명 및 난이도 설정
 def initial_output(texts: list, message: str, width: int = 73, height: int = 13):
     prepGame = True
-    difficulty = ["쉬움", "보통", "어려움"]
+    difficulty = ["보통", "어려움"]
     while prepGame:
         prepGame = False
-        print("=" * width)
-        print(f"[↑] 해당 게임은 화살표 위에 있는 === 줄에")
-        print(f"    터미널 사이즈를 맞추는 것을 추천드립니다.")
-        print("=" * width)
-        for text in texts:
-            print(text)
-        for _ in range(max(0, height - len(texts))):
-            print()
-        print("=" * width)
-        print(message)
-        print("=" * width)
-        user_input = input("> ")
-        if user_input == "1" or user_input == "쉬움":
-            settings["difficulty"] = difficulty[0]
-        elif user_input == "2" or user_input == "보통":
-            settings["difficulty"] = difficulty[1]
-        elif user_input == "3" or user_input == "어려움":
-            settings["difficulty"] = difficulty[2]
+        if settings.get("ui_mode") == "full":
+            print("=" * width)
+            print(f"[↑] 해당 게임은 화살표 위에 있는 === 줄에")
+            print(f"    터미널 사이즈를 맞추는 것을 추천드립니다.")
+            print("=" * width)
+            for text in texts:
+                print(text)
+            for _ in range(max(0, height - len(texts))):
+                print()
+            print("=" * width)
+            print(message)
+            print("=" * width)
+            user_input = input("> ").strip()
         else:
-            message = "잘못된 입력입니다"
+            # minimal 모드: 안내 한 줄 + 입력
+            output_text("난이도를 선택하세요. (1: 보통 | 2: 어려움)")
+            user_input = input_text()
+
+        if user_input == "1" or user_input == "보통":
+            settings["difficulty"] = difficulty[0]
+        elif user_input == "2" or user_input == "어려움":
+            settings["difficulty"] = difficulty[1]
+        else:
+            message = "잘못된 입력입니다."
+            if settings.get("ui_mode") == "minimal":
+                output_text(message)
             prepGame = True
 
 
 # 범용 출력 : 특수 출력에 사용되는 공통 출력 양식
 def common_output(texts: list, message: str, width: int = 73, height: int = 13):
     print("=" * width)
-    print(f"[위치]: {location}")
-    print(f"[HP]: {char_stat['hp']}")
+    print(f"[위치]: {player.location}")
+    print(f"[HP]: {player.hp}")
     print("=" * width)
     for text in texts:
         print(text)
@@ -193,7 +272,34 @@ def common_output(texts: list, message: str, width: int = 73, height: int = 13):
 
 
 # 기본 출력 : 게임의 기본 화면
-def main_output(message: str, loc_idx: list, col: int = 6, row: int = 7):
+def main_output(message: str, col: int = 6, row: int = 7):
+    cell_w = 11
+    h_line = "+" + (("-" * cell_w + "+") * col)
+    eq_line = "=" * (cell_w * col + col + 1)
+    lines = []
+    loc_idx = player.location_idx
+    print(eq_line)
+    print(f"[위치]: {player.location}")
+    print(f"[HP]: {player.hp}")
+    for r in range(row - 1, -1, -1):
+        if r == row - 1:
+            lines.append(eq_line)
+        else:
+            lines.append(h_line)
+        row_str = "|"
+        for c in range(col):
+            if r == loc_idx[0] and c == loc_idx[1]:
+                cell = "★".center(cell_w)
+            elif schoolMap[r][c] is None:
+                cell = "|" * cell_w
+            else:
+                cell = "·".center(cell_w)
+            row_str += cell + "|"
+        lines.append(row_str)
+    lines.append(eq_line)
+    print("\n".join(lines))
+    print(message)
+    print(eq_line)
     cell_w = 11
     h_line = "+" + (("-" * cell_w + "+") * col)
     eq_line = "=" * (cell_w * col + col + 1)
@@ -222,6 +328,7 @@ def main_output(message: str, loc_idx: list, col: int = 6, row: int = 7):
     print(eq_line)
 
 
+# ---------------------------- 기타 출력 -----------------------------#
 # 도움말 출력
 def help_output(texts: list, message: str):
     while True:
@@ -414,7 +521,7 @@ def print_setdifficulty():
     printSetdifficulty = []
     printSetdifficulty.append("")
     printSetdifficulty.append("< 난이도 설정 >")
-    printSetdifficulty.append(f"1. 쉬움 | 2. 보통 | 3. 어려움")
+    printSetdifficulty.append(f"1. 보통 | 2. 어려움")
     return printSetdifficulty
 
 
@@ -452,9 +559,7 @@ def move_char(loc_str: str):
     idx, num = directions[loc_str]
 
     if check_move(location_idx, idx, num):
-        if settings["difficulty"] == "쉬움":
-            fatigue = 0.5
-        elif settings["difficulty"] == "보통":
+        if settings["difficulty"] == "보통":
             fatigue = 1
         elif settings["difficulty"] == "어려움":
             fatigue = 2
@@ -673,10 +778,6 @@ def load_game(save_dir, file_name):
 
 # ---------------------------- 변수 목록 -----------------------------#
 
-# 게임 기본 설정
-settings = {"difficulty": "보통", "ui_mode": "full"}
-
-
 # 학교 위치: 연대앞 버스정류장 ~ 이윤재관 (지도 raw 데이터)
 school_locations = [
     "연대앞 버스정류장", "정문", "스타벅스", "세브란스병원 버스정류장", None, None,
@@ -688,10 +789,8 @@ school_locations = [
     "종합관", "본관", "경영관", "노천극장", "새천년관", "이윤재관",
 ]
 
-
 # 지도 생성
 schoolMap = create_map(6, school_locations)
-
 
 # 학교 장소 생성 - 객체 넣기
 places = {}
@@ -700,13 +799,11 @@ for loc_name in school_locations:
         continue
     places[loc_name] = Place(loc_name)
 
-
 # 아이템 정의
 items = {
     "두쫀쿠": Item("두쫀쿠", recovery=10),
     "카페라떼": Item("카페라떼", recovery=5),
 }
-
 
 # 구매 그룹: 각 객체에 배정(장소들의 리스트, 물건 가격 dict로 이루어진 튜플)
 buy_group = [
@@ -716,7 +813,6 @@ buy_group = [
 for names, prices in buy_group:
     for name in names:
         places[name].buy_menu = {items[item_name]: price for item_name, price in prices.items()}
-
 
 # 판매 그룹: 각 객체에 배정(장소들의 리스트, 물건 가격 dict로 이루어진 튜플)
 sell_group = [
@@ -729,7 +825,6 @@ sell_group = [
 for names, prices in sell_group:
     for name in names:
         places[name].sell_menu = {items[item_name]: price for item_name, price in prices.items()}
-
 
 # 임무 생성
 quests = {
@@ -762,6 +857,9 @@ places["독수리상"].quest_give = quests["교내 부조리 수사"]
 places["본관"].quest_solve = quests["교내 부조리 수사"]
 places["세브란스병원"].quest_solve = quests["교내 위생사건 수사"]
 places["이윤재관"].game_clear = True
+
+# 게임 기본 설정
+settings = {"difficulty": "보통", "ui_mode": "minimal"}
 
 # 플레이어 생성
 player = Player(hp=10, money=10000, location="연대앞 버스정류장", location_idx=[0, 0])
