@@ -22,7 +22,7 @@ class Quest:
 class Place:
     def __init__(self, name: str, buy_menu: dict = {}, sell_menu: dict = {}, 
                 info: str = "", quest_give: "Quest" = None, quest_solve: "Quest" = None, 
-                answer: str = "", is_finish: bool = False):
+                answer: str = "", game_clear: bool = False):
         self.name = name
         self.buy_menu = buy_menu if buy_menu else {}
         self.sell_menu = sell_menu if sell_menu else {}
@@ -30,7 +30,7 @@ class Place:
         self.quest_give = quest_give
         self.quest_solve = quest_solve
         self.answer = answer
-        self.is_finish = is_finish
+        self.game_clear = game_clear
 
     # 해당 장소의 상호작용 목록 확인
     def interactions(self) -> list:
@@ -39,7 +39,7 @@ class Place:
             labels.append("구매")
         if self.sell_menu:
             labels.append("판매")
-        if self.quest_give or self.quest_solve or self.is_finish:
+        if self.quest_give or self.quest_solve or self.game_clear:
             labels.append("임무")
         return labels
 
@@ -418,24 +418,21 @@ def print_setdifficulty():
     return printSetdifficulty
 
 
-# 상태 출력 리스트
-def print_status():
-    r, c = location_idx[0], location_idx[1]
-    east = schoolMap[r][c + 1] if c + 1 < len(schoolMap[r]) else None
-    west = schoolMap[r][c - 1] if c - 1 >= 0 else None
-    south = schoolMap[r - 1][c] if r - 1 >= 0 else None
-    north = schoolMap[r + 1][c] if r + 1 < len(schoolMap) else None
-    printStat = []
-    printStat.append("< 상태창 >")
-    printStat.append(f"1. 소지금: {char_stat['money']}원")
-    printStat.append(f"2. 체력:   {char_stat['hp']}")
-    printStat.append(f"3. 위치: {location}")
-    printStat.append(f"4. 동쪽위치: {east}")
-    printStat.append(f"5. 서쪽위치: {west}")
-    printStat.append(f"6. 남쪽위치: {south}")
-    printStat.append(f"7. 북쪽위치: {north}")
-    return printStat
+# pickle 사용 임무 정보 불러오기
+def load_tasks(path: str):
+    with open(path, "rb") as f:
+        data = pickle.load(f)
 
+    for place_name, info_text in data["events"].items():
+        if place_name in places:
+            places[place_name].info = info_text
+    quest_to_place = {}
+    for p in places.values():
+        if p.quest_solve is not None:
+            quest_to_place[p.quest_solve.name] = p
+    for quest_name, answer_loc in data["answers"].items():
+        if quest_name in quest_to_place:
+            quest_to_place[quest_name].answer = answer_loc
 
 # ---------------------------- 이동 함수 -----------------------------#
 
@@ -676,6 +673,11 @@ def load_game(save_dir, file_name):
 
 # ---------------------------- 변수 목록 -----------------------------#
 
+# 게임 기본 설정
+settings = {"difficulty": "보통", "ui_mode": "full"}
+
+
+# 학교 위치: 연대앞 버스정류장 ~ 이윤재관 (지도 raw 데이터)
 school_locations = [
     "연대앞 버스정류장", "정문", "스타벅스", "세브란스병원 버스정류장", None, None,
     "공학원", "백양로1", "공터1", "암병원", "의과대학", None,
@@ -686,16 +688,50 @@ school_locations = [
     "종합관", "본관", "경영관", "노천극장", "새천년관", "이윤재관",
 ]
 
+
+# 지도 생성
 schoolMap = create_map(6, school_locations)
 
-settings = {"difficulty": "보통", "ui_mode": "full"}
+
+# 학교 장소 생성 - 객체 넣기
+places = {}
+for loc_name in school_locations:
+    if loc_name is None:
+        continue
+    places[loc_name] = Place(loc_name)
 
 
+# 아이템 정의
 items = {
     "두쫀쿠": Item("두쫀쿠", recovery=10),
     "카페라떼": Item("카페라떼", recovery=5),
 }
 
+
+# 구매 그룹: 각 객체에 배정(장소들의 리스트, 물건 가격 dict로 이루어진 튜플)
+buy_group = [
+    (["학생회관"], {"두쫀쿠": 5000, "카페라떼": 3000}),
+    (["스타벅스", "ABMRC"], {"두쫀쿠": 4000, "카페라떼": 2000}),
+]
+for names, prices in buy_group:
+    for name in names:
+        places[name].buy_menu = {items[item_name]: price for item_name, price in prices.items()}
+
+
+# 판매 그룹: 각 객체에 배정(장소들의 리스트, 물건 가격 dict로 이루어진 튜플)
+sell_group = [
+    (["체육관", "공학관", "공학원", "재활병원", "어린이병원", "종합관", "노천극장"],
+    {"두쫀쿠": 7000, "카페라떼": 4000},),
+    (["중앙도서관", "백양관", "대강당", "백주년기념관", "안과병원", "암병원", "새천년관", "알렌관", "제중관", "의과대학", "치과대학", "세브란스병원", "본관", "경영관"],
+    {"두쫀쿠": 6000, "카페라떼": 3000},),
+]
+
+for names, prices in sell_group:
+    for name in names:
+        places[name].sell_menu = {items[item_name]: price for item_name, price in prices.items()}
+
+
+# 임무 생성
 quests = {
     "정문안내": Quest(
         name="정문안내",
@@ -720,48 +756,18 @@ quests = {
     ),
 }
 
-
-places = {}
-for loc_name in school_locations:
-    if loc_name is None:
-        continue
-    places[loc_name] = Place(loc_name)
-
-buy_group = [
-    (["학생회관"], {"두쫀쿠": 5000, "카페라떼": 3000}),
-    (["스타벅스", "ABMRC"], {"두쫀쿠": 4000, "카페라떼": 2000}),
-]
-for names, prices in buy_group:
-    for name in names:
-        places[name].buy_menu = {items[item_name]: price for item_name, price in prices.items()}
-
-sell_group = [
-    (
-        ["체육관", "공학관", "공학원", "재활병원", "어린이병원", "종합관", "노천극장"],
-        {"두쫀쿠": 7000, "카페라떼": 4000},
-    ),
-    (
-        [
-            "중앙도서관", "백양관", "대강당", "백주년기념관",
-            "안과병원", "암병원", "새천년관", "알렌관",
-            "제중관", "의과대학", "치과대학", "세브란스병원",
-            "본관", "경영관",
-        ],
-        {"두쫀쿠": 6000, "카페라떼": 3000},
-    ),
-]
-for names, prices in sell_group:
-    for name in names:
-        places[name].sell_menu = {items[item_name]: price for item_name, price in prices.items()}
-
+# 기본 임무 환경 할당
 places["정문"].quest_give = quests["정문안내"]
 places["독수리상"].quest_give = quests["교내 부조리 수사"]
 places["본관"].quest_solve = quests["교내 부조리 수사"]
 places["세브란스병원"].quest_solve = quests["교내 위생사건 수사"]
-places["이윤재관"].is_finish = True
+places["이윤재관"].game_clear = True
 
+# 플레이어 생성
 player = Player(hp=10, money=10000, location="연대앞 버스정류장", location_idx=[0, 0])
 
+# 기본 임무 로드
+load_tasks("event.bin")
 
 # ---------------------------- 메인 함수 -----------------------------#
 if __name__ == "__main__":
