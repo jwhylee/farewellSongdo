@@ -5,25 +5,36 @@ import pickle
 
 # ------------------------------- 객체 -------------------------------#
 
+
 # 아이템 객체: 이름 / HP 회복량
 class Item:
     def __init__(self, name: str, recovery: int):
         self.name = name
         self.recovery = recovery
 
+
 # 임무 객체: 임무 이름 / 설명 / 수령 여부 / 완료 여부
 class Quest:
     def __init__(self, name: str, description: str):
         self.name = name
         self.description = description
-        self.received = False 
-        self.cleared = False   
+        self.received = False
+        self.cleared = False
+
 
 # 장소 객체: 구매 / 판매 / 정보 / 임무 여부 / 정답 여부
 class Place:
-    def __init__(self, name: str, buy_menu: dict = {}, sell_menu: dict = {}, 
-                info: str = "", quest_give: "Quest" = None, quest_solve: "Quest" = None, 
-                answer: str = "", game_clear: bool = False):
+    def __init__(
+        self,
+        name: str,
+        buy_menu: dict = {},
+        sell_menu: dict = {},
+        info: str = "",
+        quest_give: "Quest" = None,
+        quest_solve: "Quest" = None,
+        answer: str = "",
+        game_clear: bool = False,
+    ):
         self.name = name
         self.buy_menu = buy_menu if buy_menu else {}
         self.sell_menu = sell_menu if sell_menu else {}
@@ -56,10 +67,18 @@ class Place:
     def has_quest(self) -> bool:
         return self.quest_give is not None or self.quest_solve is not None
 
+
 # 플레이어 객체: 체력 / 잔액 / 위치 / 가방 / 임무 - 이동 기능 포함
 class Player:
-    def __init__(self, hp: int, money: int, location: str, location_idx: list, 
-                 bag: dict = {}, tasks: list = []):
+    def __init__(
+        self,
+        hp: int,
+        money: int,
+        location: str,
+        location_idx: list,
+        bag: dict = {},
+        tasks: list = [],
+    ):
         self.hp = hp
         self.money = money
         self.location = location
@@ -87,9 +106,14 @@ class Player:
 
     # 이동 기능: check_move 함수로 이동 가능 여부를 확인 후 이동 및 반영
     def move(self, direction: str, school_map: list, difficulty: str) -> str:
-        directions = {"북": (0, 1), "남": (0, -1), "동": (1, 1), "서": (1, -1),}
+        directions = {
+            "북": (0, 1),
+            "남": (0, -1),
+            "동": (1, 1),
+            "서": (1, -1),
+        }
         fatigue = {"보통": 1, "어려움": 2}
-        
+
         if direction not in directions:
             return "잘못된 입력입니다."
 
@@ -114,7 +138,7 @@ class Player:
             return False
         return cell is not None
 
-    # 상태 출력: 
+    # 상태 출력:
     def print_status(self, school_map: list, ui_mode: str) -> list:
         # 위치가 None일 때 막힘 출력
         def adjust_dirstr(v):
@@ -133,7 +157,7 @@ class Player:
                 f"현재위치 = {self.location}",
                 f"동서남북 = {adjust_dirstr(east)}, {adjust_dirstr(west)}, {adjust_dirstr(south)}, {adjust_dirstr(north)}",
             ]
-        
+
         else:
             return [
                 "< 상태창 >",
@@ -150,6 +174,7 @@ class Player:
 # ------------------------- I/O 로깅 / 카운터 -------------------------#
 io_counter = 0
 input_log = []
+
 
 # 텍스트 출력 함수: minimal일 때 [N] 추가
 def game_output(text: str = ""):
@@ -184,6 +209,7 @@ def game_input(text: str = "> ") -> str:
 
 # ---------------------------- UI 분리  ----------------------------#
 
+
 # 기본 화면 출력
 def render_main(message: str):
     if settings["ui_mode"] == "full":
@@ -208,6 +234,7 @@ def render_panel(texts: list, message: str, notification: bool = False):
 
 
 # ---------------------------- 기초 출력 -----------------------------#
+
 
 # 초기 출력 : UI 모드 선택 → 게임 설명 및 난이도 설정
 def uiselect_output():
@@ -307,35 +334,10 @@ def main_output(message: str, col: int = 6, row: int = 7):
     print("\n".join(lines))
     print(message)
     print(eq_line)
-    cell_w = 11
-    h_line = "+" + (("-" * cell_w + "+") * col)
-    eq_line = "=" * (cell_w * col + col + 1)
-    lines = []
-    print(eq_line)
-    print(f"[위치]: {location}")
-    print(f"[HP]: {char_stat['hp']}")
-    for r in range(row - 1, -1, -1):
-        if r == row - 1:
-            lines.append(eq_line)
-        else:
-            lines.append(h_line)
-        row_str = "|"
-        for c in range(col):
-            if r == loc_idx[0] and c == loc_idx[1]:
-                cell = "★".center(cell_w)
-            elif schoolMap[r][c] is None:
-                cell = "|" * cell_w
-            else:
-                cell = "·".center(cell_w)
-            row_str += cell + "|"
-        lines.append(row_str)
-    lines.append(eq_line)
-    print("\n".join(lines))
-    print(message)
-    print(eq_line)
 
 
 # ---------------------------- 기능 출력 -----------------------------#
+
 
 # 도움말 출력
 def help_output(texts: list, message: str):
@@ -403,16 +405,6 @@ def task_output(texts: list, message: str):
             message = "잘못된 입력입니다. (닫기: 종료)"
 
 
-    while True:
-        common_output(texts, message)
-        user_input = input("> ")
-        if user_input == "q":
-            main_output("임무창을 닫았습니다.", location_idx)
-            break
-        else:
-            message = "잘못된 입력입니다."
-
-
 # 불러오기 출력 : 저장된 파일 목록 출력 및 불러오기
 def load_output(save_dir: str, message: str):
     save_dir_ = save_dir
@@ -459,17 +451,16 @@ def buy_output(texts: list, message: str, location_name: str):
         render_main("이 장소에서는 구매할 수 없습니다.")
         return
 
-    # buy_menu: {Item 객체: 가격}
     while True:
         render_panel(texts, message)
         user_input = game_input().strip()
 
-        if user_input == "닫기":
+        menu_items = list(place.buy_menu.items())  
+        exit_idx = len(menu_items) + 1
+        if user_input == "닫기" or user_input == "종료" or user_input == str(exit_idx):
             render_main("상점 이용을 종료합니다.")
             break
 
-        # 입력에서 어떤 Item 을 가리키는지 결정
-        menu_items = list(place.buy_menu.items())  # [(Item, price), ...]
         target_item = None
         if user_input.isdigit():
             idx = int(user_input) - 1
@@ -479,7 +470,6 @@ def buy_output(texts: list, message: str, location_name: str):
                 message = "잘못된 입력입니다."
                 continue
         else:
-            # 이름으로 매칭
             for item, _ in menu_items:
                 if item.name == user_input:
                     target_item = item
@@ -491,7 +481,7 @@ def buy_output(texts: list, message: str, location_name: str):
         price = place.buy_menu[target_item]
         if player.money >= price:
             player.money -= price
-            player.bag[target_item.name] = player.bag[target_item.name] + 1
+            player.bag[target_item.name] = player.bag.get(target_item.name, 0) + 1
             message = f"→ {target_item.name} 구매 완료 (잔액: {player.money}원)"
             texts = show_shop(location_name)
         else:
@@ -512,7 +502,6 @@ def sell_output(texts: list, message: str, location_name: str):
             render_main("팔 것이 없어서 종료합니다.")
             return
 
-        texts = show_sell(location_name)
         render_panel(texts, message)
         user_input = game_input().strip()
 
@@ -546,21 +535,25 @@ def sell_output(texts: list, message: str, location_name: str):
             f"계좌 잔액 = {player.money}원"
         )
 
+
 # ---------------------------- 기타 출력 -----------------------------#
+
 
 # 도움말 출력 리스트
 def print_help():
     printHelp = []
     printHelp.append("< 게임 조작법 >")
-    printHelp.append(f"[w/s/a/d]: 상하좌우로 이동")
-    printHelp.append(f"[p]: 현재 장소의 구매창 열기")
-    printHelp.append(f"[o]: 현재 장소의 판매창 열기")
-    printHelp.append(f"[f]: 임무 상호작용하기")
-    printHelp.append(f"[b]: 가방 확인 및 아이템 사용")
-    printHelp.append(f"[t]: 임무 확인")
-    printHelp.append(f"[v]: 현재 상태 확인")
-    printHelp.append(f"[h]: 도움말 확인")
-    printHelp.append(f"[1/2]: 게임 저장하기/불러오기")
+    printHelp.append(f"[동/서/남/북]: 해당 방향으로 한 칸 이동")
+    printHelp.append(f"[구매]: 현재 장소의 구매창 열기")
+    printHelp.append(f"[판매]: 현재 장소의 판매창 열기")
+    printHelp.append(f"[임무]: 현재 장소에서 임무 상호작용")
+    printHelp.append(f"[가방]: 가방 확인 및 아이템 사용")
+    printHelp.append(f"[임무목록]: 보유 임무 목록 확인")
+    printHelp.append(f"[상태]: 현재 상태 확인")
+    printHelp.append(f"[도움말]: 도움말 확인")
+    printHelp.append(f"[난이도]: 난이도 확인 및 변경")
+    printHelp.append(f"[저장 / 불러오기]: 게임 저장 / 불러오기")
+    printHelp.append(f"[종료]: 게임 종료")
     return printHelp
 
 
@@ -585,6 +578,7 @@ def show_interaction(location_name: str) -> str:
 
 
 # ---------------------------- 가방 함수 -----------------------------#
+
 
 # 가방 확인 : T/F 반환
 def check_bag() -> bool:
@@ -625,6 +619,7 @@ def use_item(user_input: str) -> str:
 
 # ---------------------------- 임무 함수 -----------------------------#
 
+
 # 임무 확인 : T/F 반환
 def check_task() -> bool:
     return player.has_task()
@@ -640,7 +635,7 @@ def open_task() -> list:
     return openTask
 
 
-# 임무 진행 : 
+# 임무 진행 :
 def do_task():
     place = places.get(player.location)
     if place is None:
@@ -661,7 +656,7 @@ def do_task():
                 "[임무목록]에 임무가 추가되었습니다.",
             ],
             "임무가 추가되었습니다. (닫기: 종료)",
-            wait_close=True,
+            notification=True,
         )
         return None
 
@@ -673,7 +668,7 @@ def do_task():
         if guide.cleared:
             render_main("이미 받은 임무입니다.")
             return None
-            
+
         guide.cleared = True
         q1 = quests["교내 부조리 수사"]
         q2 = quests["교내 위생사건 수사"]
@@ -686,7 +681,7 @@ def do_task():
                 f"{q2.name} - {q2.description}",
             ],
             "임무가 해결되었고 새 임무가 추가되었습니다. (닫기: 종료)",
-            wait_close=True,
+            notification=True,
         )
         return None
 
@@ -717,7 +712,7 @@ def do_task():
                     "수업들으러 이윤재관 가야지!",
                 ],
                 "임무가 해결되었습니다. (닫기: 종료)",
-                wait_close=True,
+                notification=True,
             )
         else:
             render_main("틀렸습니다. 다시 조사해 보세요.")
@@ -728,8 +723,7 @@ def do_task():
         q2_done = quests["교내 위생사건 수사"].cleared
         if q1_done and q2_done:
             render_main(
-                "부조리와 식중독 수사를 완료했구나! "
-                "수업은 이걸로 끝입니다. 또 만나요~"
+                "부조리와 식중독 수사를 완료했구나! 수업은 이걸로 끝입니다. 또 만나요~"
             )
             return "finish"
         elif q1_done:
@@ -737,13 +731,17 @@ def do_task():
         elif q2_done:
             render_main("식중독 수사를 완료했구나! 부조리도 찾아주세요~")
         else:
-            render_main("아직 완료된 임무가 없습니다. 부조리와 식중독 원인을 찾아주세요~")
+            render_main(
+                "아직 완료된 임무가 없습니다. 부조리와 식중독 원인을 찾아주세요~"
+            )
         return None
 
     render_main("이 장소에서는 임무 상호작용을 할 수 없습니다.")
     return None
 
+
 # ------------------------- 구매/판매 함수 --------------------------#
+
 
 # 상점 메뉴 텍스트 리스트 (구매창에 표시할 라인들)
 def show_shop(location_name: str) -> list:
@@ -753,9 +751,7 @@ def show_shop(location_name: str) -> list:
     if place is None or not place.can_buy():
         return shop_list
     for i, (item, price) in enumerate(place.buy_menu.items(), 1):
-        shop_list.append(
-            f"  {i}. {item.name}  {price}원  (HP +{item.recovery})"
-        )
+        shop_list.append(f"  {i}. {item.name}  {price}원  (HP +{item.recovery})")
     shop_list.append(f"{len(place.buy_menu) + 1}. 종료")
     return shop_list
 
@@ -785,6 +781,7 @@ def show_sell(location_name: str) -> list:
 
 
 # ------------------------- 저장/불러오기 함수 --------------------------#
+
 
 # 게임 저장하기 : 이름 입력 후 저장
 def save_game():
@@ -862,6 +859,7 @@ def load_game(save_dir, file_name):
 
 # ---------------------------- 기타 함수 ----------------------------#
 
+
 # 지도 생성 : 리스트 - 지도, 지도 좌표
 def create_map(col: int, location: list) -> list:
     schoolMap = []
@@ -895,13 +893,13 @@ def load_tasks(path: str):
 
 # 학교 위치: 연대앞 버스정류장 ~ 이윤재관 (지도 raw 데이터)
 school_locations = [
-    "연대앞 버스정류장", "정문", "스타벅스", "세브란스병원 버스정류장", None, None,
-    "공학원", "백양로1", "공터1", "암병원", "의과대학", None,
-    "공학관", "백양로2", "백주년기념관", "안과병원", "제중관", None,
-    "체육관", "백양로3", "공터2", "광혜원", "어린이병원", "세브란스병원",
-    "중앙도서관", "독수리상", "학생회관", "루스채플", "재활병원", "치과대학",
-    "백양관", "백양로5", "대강당", "음악관", "알렌관", "ABMRC",
-    "종합관", "본관", "경영관", "노천극장", "새천년관", "이윤재관",
+    "연대앞 버스정류장","정문", "스타벅스", "세브란스병원 버스정류장", None, None,
+    "공학원","백양로1","공터1","암병원","의과대학", None,
+    "공학관","백양로2","백주년기념관","안과병원","제중관", None,
+    "체육관","백양로3","공터2","광혜원","어린이병원","세브란스병원",
+    "중앙도서관","독수리상","학생회관","루스채플","재활병원","치과대학",
+    "백양관","백양로5","대강당","음악관","알렌관","ABMRC",
+    "종합관","본관","경영관","노천극장","새천년관","이윤재관",
 ]
 
 # 지도 생성
@@ -927,27 +925,49 @@ buy_group = [
 ]
 for names, prices in buy_group:
     for name in names:
-        places[name].buy_menu = {items[item_name]: price for item_name, price in prices.items()}
+        places[name].buy_menu = {
+            items[item_name]: price for item_name, price in prices.items()
+        }
 
 # 판매 그룹: 각 객체에 배정(장소들의 리스트, 물건 가격 dict로 이루어진 튜플)
 sell_group = [
-    (["체육관", "공학관", "공학원", "재활병원", "어린이병원", "종합관", "노천극장"],
-    {"두쫀쿠": 7000, "카페라떼": 4000},),
-    (["중앙도서관", "백양관", "대강당", "백주년기념관", "안과병원", "암병원", "새천년관", "알렌관", "제중관", "의과대학", "치과대학", "세브란스병원", "본관", "경영관"],
-    {"두쫀쿠": 6000, "카페라떼": 3000},),
+    (
+        ["체육관", "공학관", "공학원", "재활병원", "어린이병원", "종합관", "노천극장"],
+        {"두쫀쿠": 7000, "카페라떼": 4000},
+    ),
+    (
+        [
+            "중앙도서관",
+            "백양관",
+            "대강당",
+            "백주년기념관",
+            "안과병원",
+            "암병원",
+            "새천년관",
+            "알렌관",
+            "제중관",
+            "의과대학",
+            "치과대학",
+            "세브란스병원",
+            "본관",
+            "경영관",
+        ],
+        {"두쫀쿠": 6000, "카페라떼": 3000},
+    ),
 ]
 
 for names, prices in sell_group:
     for name in names:
-        places[name].sell_menu = {items[item_name]: price for item_name, price in prices.items()}
+        places[name].sell_menu = {
+            items[item_name]: price for item_name, price in prices.items()
+        }
 
 # 임무 생성
 quests = {
     "정문안내": Quest(
         name="정문안내",
         description=(
-            "학교에서 어떤 일들이 일어나고있는지 "
-            "소식들이 모이는 독수리상에서 알아보자."
+            "학교에서 어떤 일들이 일어나고있는지 소식들이 모이는 독수리상에서 알아보자."
         ),
     ),
     "교내 부조리 수사": Quest(
@@ -985,7 +1005,9 @@ load_tasks("event.bin")
 # ---------------------------- 메인 함수 -----------------------------#
 if __name__ == "__main__":
     uiselect_output()
-    initial_output(print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다.")
+    initial_output(
+        print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다."
+    )
     render_main("송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.")
 
     while True:
@@ -1008,7 +1030,7 @@ if __name__ == "__main__":
                         render_panel(
                             [info],
                             f"{arrival_message} (사건이 있습니다 — 닫기: 종료)",
-                            wait_close=True,
+                            notification=True,
                         )
                 else:
                     render_main(arrival_message)
@@ -1057,6 +1079,7 @@ if __name__ == "__main__":
             place = places.get(player.location)
             if place and place.can_sell():
                 sell_output(
+                    show_sell(player.location),
                     "판매할 아이템의 이름 또는 번호를 입력하시오. (마지막 번호/종료/닫기: 종료)",
                     player.location,
                 )
@@ -1064,11 +1087,14 @@ if __name__ == "__main__":
                 render_main("이 장소에서는 판매할 수 없습니다.")
 
         elif user_input == "임무":
-            continue
+            if do_task() == "finish":
+                break
 
         elif user_input == "난이도":
             render_main(f"현재 난이도: {settings['difficulty']}")
-            game_input("변경하려면 1(보통) / 2(어려움) 중 하나를 입력하세요. (그대로 유지: 닫기)")
+            render_main(
+                "변경하려면 1(보통) / 2(어려움) 중 하나를 입력하세요. (그대로 유지: 닫기)"
+            )
             diff_in = game_input().strip()
             if diff_in in ("1", "보통"):
                 settings["difficulty"] = "보통"
@@ -1077,7 +1103,9 @@ if __name__ == "__main__":
                 settings["difficulty"] = "어려움"
                 render_main("난이도를 '어려움'으로 변경했습니다.")
             else:
-                render_main(f"난이도를 변경하지 않았습니다. (현재: {settings['difficulty']})")
+                render_main(
+                    f"난이도를 변경하지 않았습니다. (현재: {settings['difficulty']})"
+                )
 
         elif user_input == "저장":
             render_main("저장할 파일 이름을 입력하시오.")
