@@ -195,9 +195,7 @@ def render_panel(texts: list, message: str):
     if settings["ui_mode"] == "full":
         common_output(texts, message)
     else:
-        block = texts
-        block.append(message)
-        game_output_block(block)
+        game_output_block(texts)
 
 
 # ---------------------------- 기초 출력 -----------------------------#
@@ -536,53 +534,41 @@ def show_interaction(location_name: str) -> str:
 
 # ---------------------------- 가방 함수 -----------------------------#
 
-
 # 가방 확인 : T/F 반환
-def check_bag():
-    if char_stat["bag"]:
-        return True
-    else:
-        return False
+def check_bag() -> bool:
+    return player.has_bag_items()
 
 
 # 가방 열기 : 아이템 이름 및 특성 출력
-def open_bag():
+def open_bag() -> list:
     openBag = []
     openBag.append("< 가방 >")
-    for i, (name, count) in enumerate(char_stat["bag"].items(), 1):
-        hp_recover = item_dict[name][1]
+    for i, (name, count) in enumerate(player.bag.items(), 1):
+        hp_recover = items[name].recovery if name in items else 0
         openBag.append(f"  {i}. {name}  x{count}  (HP +{hp_recover})")
     return openBag
 
 
 # 아이템 사용 : idx 기반 및 이름 기반 처리
-def use_item(user_input: str):
-    items = list(char_stat["bag"].items())
+def use_item(user_input: str) -> str:
+    bag_items = list(player.bag.items())
 
     if user_input.isdigit():
         idx = int(user_input) - 1
-        if 0 <= idx < len(items):
-            name = items[idx][0]
+        if 0 <= idx < len(bag_items):
+            name = bag_items[idx][0]
         else:
             return "없는 번호입니다."
-    elif user_input in char_stat["bag"]:
+    elif user_input in player.bag:
         name = user_input
     else:
         return "가방에 없는 아이템입니다."
 
-    recover = item_dict[name][1]
-    char_stat["hp"] += recover
-    char_stat["bag"][name] -= 1
-    message = (
-        f"→ {name}(을)를 사용했습니다. (HP +{recover}, 현재 HP: {char_stat['hp']})"
-    )
-    clean_inventory()
-    return message
-
-
-# 가방 정리 : 0개인 아이템 제거
-def clean_inventory():
-    char_stat["bag"] = {k: v for k, v in char_stat["bag"].items() if v != 0}
+    recover = items[name].recovery if name in items else 0
+    player.hp += recover
+    player.bag[name] -= 1
+    player.clean_bag()
+    return f"→ {name}(을)를 사용했습니다. (HP +{recover}, 현재 HP: {player.hp})"
 
 
 # ---------------------------- 임무 함수 -----------------------------#
