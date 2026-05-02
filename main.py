@@ -97,7 +97,7 @@ class Player:
         if not self.check_move(school_map, idx, num):
             return "그 방향은 막혔어."
 
-        self.hp -= fatigue.get(difficulty, 1)
+        self.hp -= fatigue[difficulty]
         self.location_idx[idx] += num
         self.location = school_map[self.location_idx[0]][self.location_idx[1]]
         return f"{self.location}(으)로 이동했습니다."
@@ -167,17 +167,17 @@ def game_output(text: str = ""):
 # 리스트를 받아 이를 텍스트 출력 함수로 보내는 기능
 def game_output_block(texts: list):
     cleaned = [t for t in texts if t not in ("", None)]
-    output_text("\n".join(cleaned))
+    game_output("\n".join(cleaned))
 
 
 # 텍스트 입력 함수: minimal일 때 [N] 추가
-def game_input() -> str:
+def game_input(text: str = "> ") -> str:
     global io_counter
     io_counter += 1
-    if settings.get("ui_mode") == "minimal":
+    if settings["ui_mode"] == "minimal":
         user_input = input(f"[{io_counter}] 입력: ")
     else:
-        user_input = input("> ")
+        user_input = input(text)
     input_log.append(user_input)
     return user_input
 
@@ -193,11 +193,18 @@ def render_main(message: str):
 
 
 # 특수 화면 출력(가방, 상태출력, 임무 등)
-def render_panel(texts: list, message: str):
+def render_panel(texts: list, message: str, notification: bool = False):
     if settings["ui_mode"] == "full":
         common_output(texts, message)
+        if notification:
+            while game_input().strip() != "닫기":
+                common_output(texts, "잘못된 입력입니다. (닫기: 종료)")
+            render_main("창을 닫았습니다.")
     else:
-        game_output_block(texts)
+        block = list(texts)
+        if message:
+            block.append(message)
+        game_output_block(block)
 
 
 # ---------------------------- 기초 출력 -----------------------------#
@@ -484,7 +491,7 @@ def buy_output(texts: list, message: str, location_name: str):
         price = place.buy_menu[target_item]
         if player.money >= price:
             player.money -= price
-            player.bag[target_item.name] = player.bag.get(target_item.name, 0) + 1
+            player.bag[target_item.name] = player.bag[target_item.name] + 1
             message = f"→ {target_item.name} 구매 완료 (잔액: {player.money}원)"
             texts = show_shop(location_name)
         else:
@@ -493,7 +500,7 @@ def buy_output(texts: list, message: str, location_name: str):
 
 # 판매 출력 : 상점 출력 및 아이템 판매
 def sell_output(texts: list, message: str, location_name: str):
-    place = places.get(location_name)
+    place = places[location_name]
     if place is None or not place.can_sell():
         render_main("이 장소에서는 판매할 수 없습니다.")
         return
@@ -632,6 +639,109 @@ def open_task() -> list:
         openTask.append(f"  {i}. {q.name} - {q.description}")
     return openTask
 
+
+# 임무 진행 : 
+def do_task():
+    place = places.get(player.location)
+    if place is None:
+        render_main("이 장소에서는 임무 상호작용을 할 수 없습니다.")
+        return None
+
+    loc = player.location
+
+    if loc == "정문":
+        guide = quests["정문안내"]
+        if guide.received or guide.cleared:
+            render_main("이미 받은 임무입니다.")
+            return None
+        player.add_task(guide)
+        render_panel(
+            [
+                guide.description,
+                "[임무목록]에 임무가 추가되었습니다.",
+            ],
+            "임무가 추가되었습니다. (닫기: 종료)",
+            wait_close=True,
+        )
+        return None
+
+    if loc == "독수리상":
+        guide = quests["정문안내"]
+        if not guide.received:
+            render_main("이 장소에서는 임무 상호작용을 할 수 없습니다.")
+            return None
+        if guide.cleared:
+            render_main("이미 받은 임무입니다.")
+            return None
+            
+        guide.cleared = True
+        q1 = quests["교내 부조리 수사"]
+        q2 = quests["교내 위생사건 수사"]
+        player.add_task(q1)
+        player.add_task(q2)
+        render_panel(
+            [
+                f"다음의 임무가 해결되었다! [{guide.description}]",
+                f"{q1.name} - {q1.description}",
+                f"{q2.name} - {q2.description}",
+            ],
+            "임무가 해결되었고 새 임무가 추가되었습니다. (닫기: 종료)",
+            wait_close=True,
+        )
+        return None
+
+    if place.quest_solve is not None:
+        target = place.quest_solve
+        if not target.received:
+            render_main("아직 받지 않은 임무입니다.")
+            return None
+        if target.cleared:
+            render_main("이미 해결된 임무입니다.")
+            return None
+
+        if loc == "본관":
+            question = "교내 어디에 부조리가 있나?"
+        elif loc == "세브란스병원":
+            question = "교내 어디에 식중독 원인이 있나?"
+        else:
+            question = "정답을 입력하시오."
+
+        game_output(question)
+        answer = game_input().strip()
+
+        if answer == place.answer:
+            target.cleared = True
+            render_panel(
+                [
+                    f"다음의 임무가 해결되었다! [{target.name}]",
+                    "수업들으러 이윤재관 가야지!",
+                ],
+                "임무가 해결되었습니다. (닫기: 종료)",
+                wait_close=True,
+            )
+        else:
+            render_main("틀렸습니다. 다시 조사해 보세요.")
+        return None
+
+    if place.game_clear:
+        q1_done = quests["교내 부조리 수사"].cleared
+        q2_done = quests["교내 위생사건 수사"].cleared
+        if q1_done and q2_done:
+            render_main(
+                "부조리와 식중독 수사를 완료했구나! "
+                "수업은 이걸로 끝입니다. 또 만나요~"
+            )
+            return "finish"
+        elif q1_done:
+            render_main("부조리 수사를 완료했구나! 식중독 원인도 찾아주세요~")
+        elif q2_done:
+            render_main("식중독 수사를 완료했구나! 부조리도 찾아주세요~")
+        else:
+            render_main("아직 완료된 임무가 없습니다. 부조리와 식중독 원인을 찾아주세요~")
+        return None
+
+    render_main("이 장소에서는 임무 상호작용을 할 수 없습니다.")
+    return None
 
 # ------------------------- 구매/판매 함수 --------------------------#
 
@@ -889,10 +999,17 @@ if __name__ == "__main__":
             message = player.move(user_input, schoolMap, settings["difficulty"])
             if message.endswith("(으)로 이동했습니다."):
                 label = show_interaction(player.location)
-                arrival_message = f"{message} {label}" if label else message
+                arrival_message = f"{message} {label}".rstrip() if label else message
                 info = places[player.location].info
                 if info:
-                    continue
+                    if settings["ui_mode"] == "minimal":
+                        render_main(f"{arrival_message}\n{info}")
+                    else:
+                        render_panel(
+                            [info],
+                            f"{arrival_message} (사건이 있습니다 — 닫기: 종료)",
+                            wait_close=True,
+                        )
                 else:
                     render_main(arrival_message)
             else:
