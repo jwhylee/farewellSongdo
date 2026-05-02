@@ -573,27 +573,19 @@ def use_item(user_input: str) -> str:
 
 # ---------------------------- 임무 함수 -----------------------------#
 
-
 # 임무 확인 : T/F 반환
-def check_task():
-    if char_stat["task"]:
-        return True
-    else:
-        return False
+def check_task() -> bool:
+    return player.has_task()
 
 
-# 임무 열기 : 임무 이름 출력 ## 진행현황 추가 예정
-def open_task():
+# 임무 열기 : 진행 중 임무들의 이름과 설명 출력
+def open_task() -> list:
     openTask = []
-    openTask.append("< 임무 >\n")
-    for i, name in enumerate(char_stat["task"], 1):
-        openTask.append(f"  {i}. {name}")
+    openTask.append("< 임무 >")
+    active = [q for q in player.tasks if q.received and not q.cleared]
+    for i, q in enumerate(active, 1):
+        openTask.append(f"  {i}. {q.name} - {q.description}")
     return openTask
-
-
-# 임무 수락 : 독수리상에서 임무 수락
-def get_task():
-    return
 
 
 # ------------------------- 구매/판매 함수 --------------------------#
@@ -651,16 +643,20 @@ def show_shop(location: str):
 
 # ------------------------- 게임 저장/불러오기 --------------------------#
 
-
-# 게임 저장하기 : 폴더 생성 후 각 요소 추가하기 ++ 모든 입력
+# 게임 저장하기 : 이름 입력 후 저장
 def save_game():
-    file_name = input("> ")
+    file_name = game_input().strip()
     os.makedirs("saves", exist_ok=True)
     with open(f"saves/{file_name}.txt", "w") as f:
-        f.write(f"char_stat: {char_stat}\n")
-        f.write(f"location: {location}\n")
-        f.write(f"location_idx: {location_idx}\n")
+        f.write(f"hp: {player.hp}\n")
+        f.write(f"money: {player.money}\n")
+        f.write(f"bag: {player.bag}\n")
+        f.write(f"location: {player.location}\n")
+        f.write(f"location_idx: {player.location_idx}\n")
+        quest_state = {q.name: (q.received, q.cleared) for q in quests.values()}
+        f.write(f"quest_state: {quest_state}\n")
         f.write(f"difficulty: {settings['difficulty']}\n")
+        f.write(f"inputs: {input_log}\n")
     return f"{file_name}으로 저장되었습니다."
 
 
@@ -690,20 +686,36 @@ def check_load_empty(save_dir: str):
 
 # 게임 불러오기 : 파일 선택 후 각 요소 불러오기
 def load_game(save_dir, file_name):
-    global char_stat, location, location_idx, settings
-    load_list = ["char_stat", "location", "location_idx", "difficulty"]
+    global input_log
     with open(os.path.join(save_dir, file_name), "r") as save_file:
         for line in save_file:
-            line = line.strip()
-            if line.startswith(load_list[0] + ": "):
-                char_stat = eval(line[len(load_list[0]) + 2 :])
-            elif line.startswith(load_list[1] + ": "):
-                location = line[len(load_list[1]) + 2 :]
-            elif line.startswith(load_list[2] + ": "):
-                location_idx = eval(line[len(load_list[2]) + 2 :])
-            elif line.startswith(load_list[3] + ": "):
-                settings["difficulty"] = line[len(load_list[3]) + 2 :]
+            line = line.rstrip("\n")
+            if line.startswith("hp: "):
+                player.hp = float(line[4:]) if "." in line[4:] else int(line[4:])
+            elif line.startswith("money: "):
+                player.money = int(line[7:])
+            elif line.startswith("bag: "):
+                player.bag = eval(line[5:])
+            elif line.startswith("location: "):
+                player.location = line[10:]
+            elif line.startswith("location_idx: "):
+                player.location_idx = eval(line[14:])
+            elif line.startswith("quest_state: "):
+                state = eval(line[13:])
+                player.tasks = []
+                for qname, (received, cleared) in state.items():
+                    if qname in quests:
+                        q = quests[qname]
+                        q.received = received
+                        q.cleared = cleared
+                        if received and q not in player.tasks:
+                            player.tasks.append(q)
+            elif line.startswith("difficulty: "):
+                settings["difficulty"] = line[12:]
+            elif line.startswith("inputs: "):
+                input_log = eval(line[8:])
     return f"{os.path.basename(file_name)}을 불러왔습니다."
+
 
 # ---------------------------- 기타 함수 ----------------------------#
 
