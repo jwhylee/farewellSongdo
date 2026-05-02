@@ -24,17 +24,8 @@ class Quest:
 
 # 장소 객체: 구매 / 판매 / 정보 / 임무 여부 / 정답 여부
 class Place:
-    def __init__(
-        self,
-        name: str,
-        buy_menu: dict = {},
-        sell_menu: dict = {},
-        info: str = "",
-        quest_give: "Quest" = None,
-        quest_solve: "Quest" = None,
-        answer: str = "",
-        game_clear: bool = False,
-    ):
+    def __init__(self, name: str, buy_menu: dict = {}, sell_menu: dict = {}, info: str = "",
+                quest_give: "Quest" = None, quest_solve: "Quest" = None, answer: str = "", game_clear: bool = False):
         self.name = name
         self.buy_menu = buy_menu if buy_menu else {}
         self.sell_menu = sell_menu if sell_menu else {}
@@ -534,6 +525,7 @@ def sell_output(texts: list, message: str, location_name: str):
             f"{target[0].name}을(를) 판매해서 {target[1]}원을 벌었다. "
             f"계좌 잔액 = {player.money}원"
         )
+        texts = show_sell(location_name)
 
 
 # ---------------------------- 기타 출력 -----------------------------#
