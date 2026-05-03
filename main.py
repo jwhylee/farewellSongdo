@@ -719,7 +719,7 @@ def do_task():
     if place.quest_solve is not None:
         target = place.quest_solve
         if not target.received:
-            render_main("아직 받지 않은 임무입니다.")
+            render_main("아직 임무를 받지 않았습니다.")
             return None
         if target.cleared:
             render_main("이미 해결된 임무입니다.")
@@ -751,8 +751,16 @@ def do_task():
         return None
 
     if place.game_clear:
-        q1_done = quests["교내 부조리 수사"].cleared
-        q2_done = quests["교내 위생사건 수사"].cleared
+        q1 = quests["교내 부조리 수사"]
+        q2 = quests["교내 위생사건 수사"]
+        
+        if not (q1.received or q2.received):
+            render_main("아직 임무를 받지 않았습니다.")
+            return None
+        
+        q1_done = q1.cleared
+        q2_done = q2.cleared
+
         if q1_done and q2_done:
             render_main("부조리와 식중독 수사를 완료했구나! 수업은 이걸로 끝입니다. 또 만나요~")
             return "finish"
