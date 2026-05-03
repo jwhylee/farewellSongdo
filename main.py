@@ -222,6 +222,7 @@ def render_main(message: str):
 # 특수 화면 출력(가방, 상태출력, 임무 등)
 def render_panel(texts: list, message: str, activate: bool = True, notification: bool = False):
     if settings["ui_mode"] == "full":
+        texts = [t.strip() for t in texts]
         common_output(texts, message)
         if notification:
             while game_input().strip() != "닫기":
@@ -257,7 +258,7 @@ def uiselect_output():
 
 
 # 초기 출력 : 게임 설명 및 난이도 설정
-def initial_output(texts: list, message: str, width: int = 73, height: int = 13):
+def initial_output(texts: list, message: str, width: int = 85, height: int = 13):
     prepGame = True
     difficulty = ["보통", "어려움"]
     while prepGame:
@@ -292,7 +293,7 @@ def initial_output(texts: list, message: str, width: int = 73, height: int = 13)
 
 
 # 범용 출력 : 특수 출력에 사용되는 공통 출력 양식
-def common_output(texts: list, message: str, width: int = 73, height: int = 13):
+def common_output(texts: list, message: str, width: int = 85, height: int = 13):
     print("=" * width)
     print(f"[위치]: {player.location}")
     print(f"[HP]: {player.hp}")
@@ -308,7 +309,7 @@ def common_output(texts: list, message: str, width: int = 73, height: int = 13):
 
 # 기본 출력 : 게임의 기본 화면
 def main_output(message: str, col: int = 6, row: int = 7):
-    cell_w = 11
+    cell_w = 13
     h_line = "+" + (("-" * cell_w + "+") * col)
     eq_line = "=" * (cell_w * col + col + 1)
     lines = []
@@ -377,7 +378,7 @@ def bag_output(texts: list, message: str):
     while True:
         render_panel(texts, message)
         user_input = game_input().strip()
-        if user_input == "닫기":
+        if user_input == "종료" or user_input == str(len(player.bag) + 1):
             render_main("가방을 닫았습니다.")
             break
         else:
@@ -534,7 +535,7 @@ def sell_output(texts: list, message: str, location_name: str):
         player.clean_bag()
         sale_message = (
             f"{target[0].name}을(를) 판매해서 {target[1]}원을 벌었다. "
-            f"계좌 잔액 = {player.money}원"
+            f"(계좌 잔액: {player.money}원)"
         )  
         message = sale_message
         texts = show_sell(location_name)
@@ -594,6 +595,7 @@ def open_bag() -> list:
     for i, (name, count) in enumerate(player.bag.items(), 1):
         hp_recover = items[name].recovery if name in items else 0
         openBag.append(f"  {i}. {name}  x{count}  (HP +{hp_recover})")
+    openBag.append(f"  {len(player.bag) + 1}) 종료")
     return openBag
 
 
@@ -616,7 +618,8 @@ def use_item(user_input: str) -> str:
     player.hp += recover
     player.bag[name] -= 1
     player.clean_bag()
-    return f"→ {name}(을)를 사용했습니다. (HP +{recover}, 현재 HP: {player.hp})"
+    item_message = f"→ {name}(을)를 먹었습니다. (HP: {player.hp})"
+    return item_message if player.has_bag_items() else item_message + " | 아이템이 없어서 가방을 닫았습니다."
 
 
 # ---------------------------- 임무 함수 -----------------------------#
@@ -632,8 +635,8 @@ def open_task() -> list:
     openTask = []
     openTask.append("< 임무 >")
     active = [q for q in player.tasks if q.received and not q.cleared]
-    for i, q in enumerate(active, 1):
-        openTask.append(f"   {i}) {q.name} - {q.description}")
+    for q in active:
+        openTask.append(f"     {q.name} - {q.description}")
     return openTask
 
 
@@ -647,15 +650,15 @@ def do_task():
     loc = player.location
 
     if loc == "정문":
-        guide = quests["정문안내"]
+        guide = quests["독수리의 전언"]
         if guide.received or guide.cleared:
-            render_main("이미 받은 임무입니다.")
+            render_main("이미 수령한 임무입니다.")
             return None
         player.add_task(guide)
         render_panel(
             [
                 guide.description,
-                "[임무목록]에 임무가 추가되었습니다.",
+                f"    < {guide.name} > 임무가 추가되었습니다.",
             ],
             "임무가 추가되었습니다.",
             activate=False,
@@ -664,9 +667,9 @@ def do_task():
         return None
 
     if loc == "독수리상":
-        guide = quests["정문안내"]
+        guide = quests["독수리의 전언"]
         if not guide.received:
-            render_main("이 장소에서는 임무 상호작용을 할 수 없습니다.")
+            render_main("정문으로 이동하여 임무를 수령하시오.")
             return None
         if guide.cleared:
             render_main("이미 받은 임무입니다.")
@@ -679,9 +682,10 @@ def do_task():
         player.add_task(q2)
         render_panel(
             [
-                f"다음의 임무가 해결되었다! [{guide.description}]",
-                f"{q1.name} - {q1.description}",
-                f"{q2.name} - {q2.description}",
+                f"<{guide.name}> 임무가 해결되었습니다!\n",
+                "    새로운 임무들이 추가되었습니다!",
+                f"    < {q1.name} >\n     {q1.description}\n",
+                f"    < {q2.name} >\n     {q2.description}",
             ],
             "임무가 해결되었고 새 임무가 추가되었습니다.",
             activate=False,
@@ -713,7 +717,7 @@ def do_task():
             render_panel(
                 [
                     f"다음의 임무가 해결되었다! [{target.name}]",
-                    "수업들으러 이윤재관 가야지!",
+                    "    수업들으러 이윤재관 가야지!",
                 ],
                 "임무가 해결되었습니다.",
                 activate=False,
@@ -727,18 +731,14 @@ def do_task():
         q1_done = quests["교내 부조리 수사"].cleared
         q2_done = quests["교내 위생사건 수사"].cleared
         if q1_done and q2_done:
-            render_main(
-                "부조리와 식중독 수사를 완료했구나! 수업은 이걸로 끝입니다. 또 만나요~"
-            )
+            render_main("부조리와 식중독 수사를 완료했구나! 수업은 이걸로 끝입니다. 또 만나요~")
             return "finish"
         elif q1_done:
             render_main("부조리 수사를 완료했구나! 식중독 원인도 찾아주세요~")
         elif q2_done:
             render_main("식중독 수사를 완료했구나! 부조리도 찾아주세요~")
         else:
-            render_main(
-                "아직 완료된 임무가 없습니다. 부조리와 식중독 원인을 찾아주세요~"
-            )
+            render_main("아직 완료된 임무가 없습니다. 부조리와 식중독 원인을 찾아주세요~")
         return None
 
     render_main("이 장소에서는 임무 상호작용을 할 수 없습니다.")
@@ -1006,8 +1006,8 @@ for names, prices in sell_group:
 
 # 임무 생성
 quests = {
-    "정문안내": Quest(
-        name="정문안내",
+    "독수리의 전언": Quest(
+        name="독수리의 전언",
         description=(
             "학교에서 어떤 일들이 일어나고있는지 소식들이 모이는 독수리상에서 알아보자."
         ),
@@ -1029,7 +1029,7 @@ quests = {
 }
 
 # 기본 임무 환경 할당
-places["정문"].quest_give = quests["정문안내"]
+places["정문"].quest_give = quests["독수리의 전언"]
 places["독수리상"].quest_give = quests["교내 부조리 수사"]
 places["본관"].quest_solve = quests["교내 부조리 수사"]
 places["세브란스병원"].quest_solve = quests["교내 위생사건 수사"]
