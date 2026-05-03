@@ -153,10 +153,10 @@ class Player:
         if ui_mode == "minimal":
             return [
                 "< 상태창 >",
-                f"    계좌의 잔액 = {self.money:,}원",
-                f"    HP = {self.hp}",
-                f"    현재위치 = {self.location}",
-                f"    동서남북 = {adjust_dirstr(east)}, {adjust_dirstr(west)}, {adjust_dirstr(south)}, {adjust_dirstr(north)}",
+                f"계좌의 잔액 = {self.money:,}원",
+                f"HP = {self.hp}",
+                f"현재위치 = {self.location}",
+                f"동서남북 = {adjust_dirstr(east)}, {adjust_dirstr(west)}, {adjust_dirstr(south)}, {adjust_dirstr(north)}",
             ]
 
         else:
@@ -175,16 +175,20 @@ class Player:
 # ------------------------- I/O 로깅 / 카운터 -------------------------#
 io_counter = 0
 input_log = []
-output_log = []
+f_input_log = []
+f_output_log = []
 
 # 텍스트 출력 함수: minimal일 때 [N] 추가
 def game_output(text: str = ""):
     global io_counter
     io_counter += 1
+    
     if settings["ui_mode"] == "minimal":
         lines = text.split("\n") if text else [""]
+        f_output_log.append(f"[{io_counter}] {lines[0]}")
         print(f"[{io_counter}] {lines[0]}")
         for line in lines[1:]:
+            f_output_log.append(f"{line}")
             print(line)
     else:
         print(text)
@@ -193,7 +197,10 @@ def game_output(text: str = ""):
 # 리스트를 받아 이를 텍스트 출력 함수로 보내는 기능
 def game_output_block(texts: list):
     cleaned = [t for t in texts if t not in ("", None)]
-    game_output("\n".join(cleaned))
+    if not cleaned:
+        return
+    formatted = [cleaned[0]] + ["     " + t for t in cleaned[1:]]
+    game_output("\n".join(formatted))
 
 
 # 텍스트 입력 함수: minimal일 때 [N] 추가
@@ -205,7 +212,21 @@ def game_input(text: str = "> ") -> str:
     else:
         user_input = input(text)
     input_log.append(user_input)
+    f_input_log.append((f"[{io_counter}] {user_input}"))
     return user_input
+
+
+# 입출력 로그 저장: minimal에서만 실행 - 채점용
+def dump_log():
+    if settings["ui_mode"] == "minimal":    
+        with open("player_input.txt", "w") as f:
+            for line in f_input_log:
+                f.write(line + "\n")
+        with open("game_output.txt", "w") as f:
+            for line in f_output_log:
+                f.write(line + "\n")
+    else:
+        return
 
 
 # ---------------------------- UI 분리  ----------------------------#
@@ -223,7 +244,7 @@ def render_main(message: str):
 def render_panel(texts: list, message: str, activate: bool = True, notification: bool = False):
     if settings["ui_mode"] == "full":
         texts = [t.strip() for t in texts]
-        common_output(texts, message)
+        common_output(texts, message.strip())
         if notification:
             while game_input().strip() != "닫기":
                 common_output(texts, "잘못된 입력입니다.")
@@ -534,7 +555,7 @@ def sell_output(texts: list, message: str, location_name: str):
         player.bag[target[0].name] -= 1
         player.clean_bag()
         sale_message = (
-            f"{target[0].name}을(를) 판매해서 {target[1]}원을 벌었다. "
+            f"→ {target[0].name}을(를) 판매해서 {target[1]}원을 벌었다. "
             f"(계좌 잔액: {player.money}원)"
         )  
         message = sale_message
@@ -548,15 +569,15 @@ def sell_output(texts: list, message: str, location_name: str):
 def print_help():
     printHelp = []
     printHelp.append("< 게임 조작법 >")
-    printHelp.append(f"  - 동/서/남/북\t\t| 해당 방향으로 한 칸 이동")
-    printHelp.append(f"  - 구매/판매/임무\t| 현재 장소에서 구매/판매/임무 상호작용")
-    printHelp.append(f"  - 가방\t\t| 가방 확인 및 아이템 사용")
-    printHelp.append(f"  - 임무목록/상태\t| 보유 임무/현재 상태 확인")
-    printHelp.append(f"  - 도움말\t\t| 도움말 확인")
-    printHelp.append(f"  - 난이도\t\t| 난이도 확인 및 변경")
-    printHelp.append(f"  - 저장/불러오기\t| 게임 저장/불러오기")
-    printHelp.append(f"  - 닫기\t\t| 현재 탭 닫기(보조 인터페이스용)")
-    printHelp.append(f"  - 종료\t\t| 게임 종료")
+    printHelp.append(f"- 동/서/남/북\t| 해당 방향으로 한 칸 이동")
+    printHelp.append(f"- 구매/판매/임무\t| 현재 장소에서 구매/판매/임무 상호작용")
+    printHelp.append(f"- 가방\t\t| 가방 확인 및 아이템 사용")
+    printHelp.append(f"- 임무목록/상태\t| 보유 임무/현재 상태 확인")
+    printHelp.append(f"- 도움말\t\t| 도움말 확인")
+    printHelp.append(f"- 난이도\t\t| 난이도 확인 및 변경")
+    printHelp.append(f"- 저장/불러오기\t| 게임 저장/불러오기")
+    printHelp.append(f"- 닫기\t\t| 현재 탭 닫기(보조 인터페이스용)")
+    printHelp.append(f"- 종료\t\t| 게임 종료")
     return printHelp
 
 
@@ -594,8 +615,8 @@ def open_bag() -> list:
     openBag.append("< 가방 >")
     for i, (name, count) in enumerate(player.bag.items(), 1):
         hp_recover = items[name].recovery if name in items else 0
-        openBag.append(f"  {i}. {name}  x{count}  (HP +{hp_recover})")
-    openBag.append(f"  {len(player.bag) + 1}) 종료")
+        openBag.append(f"{i}) {name}  x{count}  (HP +{hp_recover})")
+    openBag.append(f"{len(player.bag) + 1}) 종료")
     return openBag
 
 
@@ -608,7 +629,7 @@ def use_item(user_input: str) -> str:
         if 0 <= idx < len(bag_items):
             name = bag_items[idx][0]
         else:
-            return "없는 번호입니다."
+            return "가방에 없는 번호입니다."
     elif user_input in player.bag:
         name = user_input
     else:
@@ -636,11 +657,11 @@ def open_task() -> list:
     openTask.append("< 임무 >")
     active = [q for q in player.tasks if q.received and not q.cleared]
     for q in active:
-        openTask.append(f"     {q.name} - {q.description}")
+        openTask.append(f"{q.name} - {q.description}")
     return openTask
 
 
-# 임무 진행 :
+# 임무 진행 : 전반적인 임무의 처리
 def do_task():
     place = places.get(player.location)
     if place is None:
@@ -658,7 +679,7 @@ def do_task():
         render_panel(
             [
                 guide.description,
-                f"    < {guide.name} > 임무가 추가되었습니다.",
+                f"< {guide.name} > 임무가 추가되었습니다.",
             ],
             "임무가 추가되었습니다.",
             activate=False,
@@ -682,10 +703,12 @@ def do_task():
         player.add_task(q2)
         render_panel(
             [
-                f"<{guide.name}> 임무가 해결되었습니다!\n",
-                "    새로운 임무들이 추가되었습니다!",
-                f"    < {q1.name} >\n     {q1.description}\n",
-                f"    < {q2.name} >\n     {q2.description}",
+                f"< {guide.name} > 임무가 해결되었습니다!\n",
+                "새로운 임무들이 추가되었습니다!",
+                f"< {q1.name} >",
+                f"{q1.description}\n",
+                f"< {q2.name} >",
+                f"{q2.description}",
             ],
             "임무가 해결되었고 새 임무가 추가되었습니다.",
             activate=False,
@@ -717,7 +740,7 @@ def do_task():
             render_panel(
                 [
                     f"다음의 임무가 해결되었다! [{target.name}]",
-                    "    수업들으러 이윤재관 가야지!",
+                    "수업들으러 이윤재관 가야지!",
                 ],
                 "임무가 해결되었습니다.",
                 activate=False,
@@ -757,9 +780,9 @@ def show_shop(location_name: str) -> list:
         return shop_list
     for i, (item, price) in enumerate(place.buy_menu.items(), 1):
         shop_list.append(
-            f"    {i}) {item.name}: {price}원, HP가 {item.recovery}만큼 증가한다."
+            f"{i}) {item.name}: {price}원, HP가 {item.recovery}만큼 증가한다."
         )
-    shop_list.append(f"    {len(place.buy_menu) + 1}) 종료")
+    shop_list.append(f"{len(place.buy_menu) + 1}) 종료")
     return shop_list
 
 
@@ -779,7 +802,7 @@ def check_sell(location_name: str) -> list:
 # 판매 메뉴 텍스트 리스트
 def show_sell(location_name: str) -> list:
     sellables = check_sell(location_name)
-    sell_list = ["무엇을 판매하시겠습니까?"]
+    sell_list = [f"[ {location_name} 판매점 ] - 소지금 {player.money}원"]
     for i, (item, price, count) in enumerate(sellables, 1):
         sell_list.append(f"{i}) {item.name} x{count}  ({price}원)")
     sell_list.append(f"{len(sellables) + 1}) 종료")
@@ -1047,9 +1070,7 @@ load_tasks("event.bin")
 # ---------------------------- 메인 함수 -----------------------------#
 if __name__ == "__main__":
     uiselect_output()
-    initial_output(
-        print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다."
-    )
+    initial_output(print_help() + print_setdifficulty(), "난이도를 입력하면 게임이 시작됩니다.")
     render_main("송도 생활을 마치고 신촌에 처음 도착했다. 연대앞 버스정류장이다.")
     
     while True:
@@ -1070,7 +1091,7 @@ if __name__ == "__main__":
                 info = places[player.location].info
                 if info:
                     if settings["ui_mode"] == "minimal":
-                        render_main(f"{arrival_message}\n{info}")
+                        render_main(f"{arrival_message}\n     {info}")
                     else:
                         render_panel(
                             [info],
@@ -1130,6 +1151,7 @@ if __name__ == "__main__":
 
         elif user_input == "임무":
             if do_task() == "finish":
+                dump_log()
                 break
 
         elif user_input == "난이도":
@@ -1142,9 +1164,7 @@ if __name__ == "__main__":
                 settings["difficulty"] = "어려움"
                 render_main("난이도를 '어려움'으로 변경했습니다.")
             else:
-                render_main(
-                    f"난이도를 변경하지 않았습니다. (현재: {settings['difficulty']})"
-                )
+                render_main(f"난이도를 변경하지 않았습니다. (현재: {settings['difficulty']})")
 
         elif user_input == "저장":
             render_main("저장할 파일 이름을 입력하시오.")
