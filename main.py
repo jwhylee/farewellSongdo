@@ -36,8 +36,8 @@ class Place:
         game_clear: bool = False,
     ):
         self.name = name
-        self.buy_menu = buy_menu if buy_menu else {}
-        self.sell_menu = sell_menu if sell_menu else {}
+        self.buy_menu = buy_menu
+        self.sell_menu = sell_menu
         self.info = info
         self.quest_give = quest_give
         self.quest_solve = quest_solve
@@ -138,7 +138,7 @@ class Player:
             return False
         return cell is not None
 
-    # 상태 출력:
+    # 상태 출력： ui mode에 따라 출력이 다름
     def print_status(self, school_map: list, ui_mode: str) -> list:
         # 위치가 None일 때 막힘 출력
         def adjust_dirstr(v):
@@ -703,10 +703,10 @@ def do_task():
         player.add_task(q2)
         render_panel(
             [
-                f"< {guide.name} > 임무가 해결되었습니다!\n",
+                f"< {guide.name} > 임무가 해결되었습니다!",
                 "새로운 임무들이 추가되었습니다!",
                 f"< {q1.name} >",
-                f"{q1.description}\n",
+                f"{q1.description}",
                 f"< {q2.name} >",
                 f"{q2.description}",
             ],
@@ -1119,7 +1119,7 @@ if __name__ == "__main__":
             if check_task():
                 task_output(open_task(), "현재 사용자의 임무입니다.")
             else:
-                render_main("현재 사용자의 임무가 없습니다.")
+                render_main("현재 진행 중인 임무가 없습니다.")
 
         elif user_input == "도움말":
             help_output(
